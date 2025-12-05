@@ -50,7 +50,7 @@ public class SwaggerConfig {
                 .description("Local Development Server");
 
         Server prodServer = new Server()
-                .url("https://api.broomate.com")
+                .url("https://broomate.onrender.com")
                 .description("Production Server");
 
         // Build OpenAPI
