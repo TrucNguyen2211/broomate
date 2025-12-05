@@ -1,12 +1,4 @@
 {
   "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/ai.js"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }]
 }
