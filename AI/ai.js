@@ -34,12 +34,12 @@ app.use(bodyParser.json());
 // --- ROUTE ATTACHMENT ---
 // Gắn Image Router vào đường dẫn '/api'
 // -> Các route sẽ là /api/verify-image
-app.use('/api', imageRouter);
+app.use('/', imageRouter);
 
 // Gắn Score Router vào đường dẫn '/api'
 // -> Các route sẽ là /api/v1/questions, /api/v1/score, /api/v1/followup-questions
 // Lưu ý: Score Router đã có tiền tố '/v1' bên trong, nên ở đây chỉ cần '/api'
-app.use('/api', scoreRouter); 
+app.use('/', scoreRouter); 
 
 // --- SERVER STARTUP ---
 // Only start server if not running as Vercel serverless function
