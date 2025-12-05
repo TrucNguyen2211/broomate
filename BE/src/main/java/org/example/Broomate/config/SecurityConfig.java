@@ -83,10 +83,26 @@ public class SecurityConfig {
                 "https://broomate.onrender.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        // Explicitly allow all headers including multipart/form-data headers
+        configuration.setAllowedHeaders(Arrays.asList(
+                "*",
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "Accept",
+                "Origin",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
+        ));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(86400L); // Cache preflight response for 24 hours (reduce CORS checks)
-        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type")); // Expose important headers
+        configuration.setExposedHeaders(Arrays.asList(
+                "Authorization", 
+                "Content-Type",
+                "Content-Disposition",
+                "Access-Control-Allow-Origin",
+                "Access-Control-Allow-Credentials"
+        )); // Expose important headers
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

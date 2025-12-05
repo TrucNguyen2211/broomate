@@ -27,10 +27,6 @@ public class SwaggerConfig {
                 .name("Authorization")
                 .description("JWT Authentication");
 
-        // Define security requirement
-        SecurityRequirement securityRequirement = new SecurityRequirement()
-                .addList("bearerAuth");
-
         // Define API info
         Info info = new Info()
                 .title("Broomate API")
@@ -54,12 +50,14 @@ public class SwaggerConfig {
                 .description("Production Server");
 
         // Build OpenAPI
+        // NOTE: Security requirement is NOT added globally here
+        // Individual endpoints will specify @SecurityRequirement annotation if needed
         return new OpenAPI()
                 .openapi("3.1.0")  // Explicitly set OpenAPI version to 3.1.0
                 .info(info)
                 .servers(List.of(localServer, prodServer))
                 .components(new Components()
-                        .addSecuritySchemes("bearerAuth", securityScheme))
-                .addSecurityItem(securityRequirement);
+                        .addSecuritySchemes("bearerAuth", securityScheme));
+                // Removed .addSecurityItem() so public endpoints don't require auth in Swagger UI
     }
 }
