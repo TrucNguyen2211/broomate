@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Broomate – Combined AI Tools Tester</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#1e40af',
+                        'primary-green': '#10b981',
+                        'bg-dark': '#f3f4f6',
+                        'accent-yellow': '#f59e0b',
+                        'accent-red': '#dc2626',
+                    },
+                },
+            },
+        };
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        .question-answer-container {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .question-answer-container:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        /* message box fade */
+        #imageMessageBox {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        #imageMessageBox.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-gray-100">
+<div class="max-w-6xl mx-auto p-4 md:p-8">
+    <header class="mb-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-primary-blue mb-2">
+            Broomate – Combined AI Tools Tester
+        </h1>
+        <p class="text-gray-600 text-sm md:text-base max-w-3xl">
+            Trang test nội bộ cho <span class="font-semibold">AI Image Verification</span> (trên)
+            và <span class="font-semibold">AI Matchmaker</span> (dưới). Tất cả chỉ dùng
+            <code>div</code>, không có form, nên sẽ không bị reload page.
+        </p>
+    </header>
+
+    <!-- ================= IMAGE VERIFICATION (TRÊN) ================= -->
+    <section class="bg-white rounded-xl card p-4 md:p-6 mb-8">
+        <div class="p-4 md:p-6 flex flex-col items-center">
+            <h2 class="text-2xl md:text-3xl font-bold text-primary-blue mb-4 text-center">
+                🖼️ AI Image Verification Tester
+            </h2>
+            <p class="text-gray-600 mb-6 max-w-2xl text-center text-sm md:text-base">
+                Gửi ảnh lên endpoint <code>/api/verify-image</code> (Google Vision WEB_DETECTION + LABEL_DETECTION).
+                FE sẽ hiển thị: nếu <strong>isOriginal = true</strong> &rarr; báo hình legit;
+                nếu <strong>false</strong> &rarr; hiện lý do từ AI.
+            </p>
+
+            <div class="w-full max-w-xl bg-white p-6 rounded-xl card">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">
+                    Chọn Ảnh để Kiểm Tra
+                </h3>
+
+                <div
+                    id="imageMessageBox"
+                    class="p-3 mb-4 rounded-lg text-sm font-medium hidden"
+                ></div>
+
+                <div class="mb-4">
+                    <label
+                        class="block text-sm font-medium text-gray-700 mb-1"
+                        for="imageFile"
+                    >Upload File Ảnh</label>
+                    <input
+                        type="file"
+                        id="imageFile"
+                        accept="image/*"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue
+                               file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold
+                               file:bg-primary-blue file:text-white hover:file:bg-blue-700"
+                    />
+                </div>
+
+                <div id="imagePreviewContainer" class="mb-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Xem Trước Ảnh:</label>
+                    <img
+                        id="imagePreview"
+                        class="w-full h-48 object-contain rounded-lg border border-gray-300 mx-auto"
+                        alt="Image Preview"
+                    />
+                </div>
+
+                <button
+                    type="button"
+                    id="verifyButton"
+                    class="w-full px-4 py-3 bg-primary-green text-white font-medium rounded-lg hover:bg-green-600
+                           transition duration-150 disabled:bg-gray-400"
+                    onclick="verifyImage()"
+                >
+                    Gửi Ảnh đến API (Verify Image)
+                </button>
+            </div>
+
+            <div class="w-full max-w-xl mt-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">
+                    Kết Quả API
+                </h3>
+
+                <div
+                    id="imageLoadingIndicator"
+                    class="hidden mt-4 text-center text-primary-blue font-medium"
+                >
+                    <svg
+                        class="animate-spin h-5 w-5 mr-3 inline text-primary-blue"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        ></circle>
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                    </svg>
+                    Đang gửi ảnh và chờ Google Vision API phản hồi...
+                </div>
+
+                <div
+                    id="imageResultOutput"
+                    class="bg-gray-800 text-white p-4 rounded-xl font-mono text-sm whitespace-pre-wrap card
+                           min-h-[100px] flex items-center justify-center"
+                >
+                    Chưa có lệnh nào được thực thi...
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= MATCHMAKER (DƯỚI) ================= -->
+    <section class="bg-white rounded-xl card p-4 md:p-6">
+        <div class="p-4 md:p-8 flex flex-col items-center">
+            <h2 class="text-2xl md:text-3xl font-bold text-primary-blue mb-4 text-center">
+                Broomate AI Matchmaker 🧑‍🤝‍🧑
+            </h2>
+            <p class="text-gray-600 mb-6 max-w-2xl text-center text-sm md:text-base">
+                Test Gemini-based compatibility: <strong>Agent 1</strong> tạo câu hỏi ban đầu,
+                <strong>Agent 2</strong> chấm điểm &amp; có thể xin thêm câu hỏi follow-up.
+            </p>
+
+            <div class="w-full max-w-4xl bg-white p-6 rounded-xl card">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">
+                    User Data Input
+                </h3>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                            for="client1Profile"
+                        >Client 1 Profile (Host/Asker)</label>
+                        <textarea
+                            id="client1Profile"
+                            rows="4"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue text-sm"
+                            placeholder="Information about Client 1..."
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                            for="client2Profile"
+                        >Client 2 Profile (Potential Roommate/Answerer)</label>
+                        <textarea
+                            id="client2Profile"
+                            rows="4"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue text-sm"
+                            placeholder="Information about Client 2..."
+                        ></textarea>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">
+                    Q&amp;A History (Current Conversation)
+                </h3>
+
+                <div
+                    id="qaHistory"
+                    class="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200 h-64 overflow-y-auto mb-4"
+                >
+                    <p class="text-gray-500 italic">
+                        No questions have been asked yet. Click <strong>Start</strong> to begin.
+                    </p>
+                </div>
+
+                <div
+                    id="answerWarning"
+                    class="hidden p-3 mb-4 rounded-lg bg-red-100 text-red-700 font-medium text-sm"
+                >
+                    Please answer all outstanding questions before clicking "Continue".
+                </div>
+
+                <div class="flex flex-col md:flex-row md:space-x-4 space-y-3 md:space-y-0 mt-4">
+                    <button
+                        type="button"
+                        id="startAgent1"
+                        class="flex-1 px-4 py-2 bg-primary-green text-white font-medium rounded-lg hover:bg-green-600
+                               transition duration-150 disabled:bg-gray-400 text-sm"
+                        onclick="startMatching()"
+                    >
+                        Start (Agent 1: Generate 5 Questions)
+                    </button>
+
+                    <button
+                        type="button"
+                        id="continueAgent2"
+                        class="flex-1 px-4 py-2 bg-yellow-600 text-white font-medium rounded-lg hover:bg-yellow-700
+                               transition duration-150 disabled:bg-gray-400 text-sm"
+                        onclick="continueMatching()"
+                        disabled
+                    >
+                        Continue (Agent 2: Score/Ask More)
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full max-w-4xl mt-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">
+                    Results and API Output
+                </h3>
+
+                <div
+                    id="matchmakerResultOutput"
+                    class="bg-gray-800 text-white p-4 rounded-xl font-mono text-sm whitespace-pre-wrap card
+                           min-h-[100px] flex items-center justify-center"
+                >
+                    Awaiting Command...
+                </div>
+
+                <div
+                    id="matchmakerLoadingIndicator"
+                    class="hidden mt-4 text-center text-primary-blue font-medium"
+                >
+                    <svg
+                        class="animate-spin h-5 w-5 mr-3 inline text-primary-blue"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        ></circle>
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                    </svg>
+                    AI is processing the request... (May take a few seconds)
+                </div>
+
+                <div
+                    id="matchmakerStatusMessage"
+                    class="mt-4 p-3 rounded-lg text-center font-medium hidden text-sm"
+                ></div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- ================= IMAGE VERIFICATION SCRIPT ================= -->
+<script>
+    (function () {
+        // FE và BE chạy chung domain: dùng path tương đối
+        const API_URL = 'http://localhost:3000/api/verify-image';
+
+        const DOM = {
+            imageFile: document.getElementById('imageFile'),
+            imagePreview: document.getElementById('imagePreview'),
+            imagePreviewContainer: document.getElementById('imagePreviewContainer'),
+            verifyButton: document.getElementById('verifyButton'),
+            resultOutput: document.getElementById('imageResultOutput'),
+            loadingIndicator: document.getElementById('imageLoadingIndicator'),
+            messageBox: document.getElementById('imageMessageBox'),
+        };
+
+        function showMessage(message, type = 'error') {
+            DOM.messageBox.textContent = message;
+            DOM.messageBox.classList.remove(
+                'hidden',
+                'bg-red-100',
+                'text-red-700',
+                'bg-blue-100',
+                'text-blue-700',
+                'bg-gray-100',
+                'text-gray-700'
+            );
+            if (type === 'error') {
+                DOM.messageBox.classList.add('bg-red-100', 'text-red-700');
+            } else if (type === 'info') {
+                DOM.messageBox.classList.add('bg-blue-100', 'text-blue-700');
+            } else {
+                DOM.messageBox.classList.add('bg-gray-100', 'text-gray-700');
+            }
+            // trigger fade
+            DOM.messageBox.classList.add('show');
+            setTimeout(() => {
+                DOM.messageBox.classList.remove('show');
+                setTimeout(() => {
+                    DOM.messageBox.classList.add('hidden');
+                }, 300);
+            }, 5000);
+        }
+
+        function toggleLoading(isLoading) {
+            DOM.verifyButton.disabled = isLoading;
+            DOM.loadingIndicator.classList.toggle('hidden', !isLoading);
+            if (isLoading) {
+                DOM.resultOutput.textContent = 'Processing...';
+                DOM.resultOutput.classList.add('justify-center');
+                DOM.resultOutput.style.backgroundColor = '#4b5563';
+            } else {
+                DOM.resultOutput.classList.remove('justify-center');
+            }
+        }
+
+        // Hiển thị kết quả theo logic mới:
+        // - Nếu isOriginal = true => báo hình legit
+        // - Nếu isOriginal = false => hiển thị reason từ BE (AI/WEB detection)
+        function displayResult(isOriginal, reason, fullJson) {
+            const statusClass = isOriginal
+                ? 'bg-primary-green text-white'
+                : 'bg-red-500 text-white';
+            const statusText = isOriginal
+                ? '✅ KẾT LUẬN: HÌNH LEGIT / ORIGINAL'
+                : '❌ KẾT LUẬN: KHÔNG ORIGINAL / NGHI VẤN (STOLEN / AI)';
+
+            const resultHtml = `
+                <div class="w-full p-3 rounded-lg font-bold text-center mb-3 ${statusClass}">
+                    ${statusText}
+                </div>
+                <p class="text-white mb-2 text-sm">
+                    Lý do: ${reason}
+                </p>
+                <details class="mt-3 text-xs text-gray-300">
+                    <summary class="cursor-pointer mb-1">Xem FULL JSON từ API</summary>
+                    <pre class="whitespace-pre-wrap overflow-auto max-h-80 mt-2 border-t border-gray-700 pt-2">
+${JSON.stringify(fullJson, null, 2)}
+                    </pre>
+                </details>
+            `;
+            DOM.resultOutput.innerHTML = resultHtml;
+            DOM.resultOutput.style.backgroundColor = 'rgb(31 41 55)';
+        }
+
+        async function verifyImage() {
+            DOM.messageBox.classList.add('hidden');
+            DOM.resultOutput.textContent = 'Chưa có lệnh nào được thực thi...';
+
+            const file = DOM.imageFile.files[0];
+            if (!file) {
+                showMessage('Vui lòng chọn một file ảnh trước khi gửi.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            // MULTER field name: imageFile
+            formData.append('imageFile', file);
+
+            toggleLoading(true);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const error = result.error || response.statusText;
+                    console.error('Server error details:', result.details || result);
+                    throw new Error('[HTTP ' + response.status + '] ' + error);
+                }
+
+                // Kết quả BE: { isOriginal, reason, stolen_check, ai_check, ... }
+                displayResult(result.isOriginal, result.reason, result);
+            } catch (error) {
+                console.error('Lỗi khi kiểm tra ảnh:', error);
+                DOM.resultOutput.style.backgroundColor = '#b91c1c';
+                DOM.resultOutput.textContent =
+                    '🚨 LỖI KẾT NỐI/XỬ LÝ API:\n\n' +
+                    error.message +
+                    '\n\nĐảm bảo server đang chạy trên /api/verify-image và GOOGLE_VISION_KEY_PATH được cấu hình đúng.';
+                DOM.resultOutput.classList.add('justify-center');
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        // Preview ảnh khi chọn file
+        DOM.imageFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    showMessage(
+                        'Kích thước ảnh không được vượt quá 5MB. Vui lòng chọn ảnh khác.',
+                        'error'
+                    );
+                    DOM.imageFile.value = '';
+                    DOM.imagePreviewContainer.classList.add('hidden');
+                    return;
+                }
+
+                showMessage('Ảnh đã chọn: ' + file.name, 'info');
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    DOM.imagePreview.src = e.target.result;
+                    DOM.imagePreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                DOM.imagePreviewContainer.classList.add('hidden');
+            }
+        });
+
+        // expose global
+        window.verifyImage = verifyImage;
+    })();
+</script>
+
+<!-- ================= MATCHMAKER SCRIPT ================= -->
+<script>
+    (function () {
+        // FE & BE cùng domain => dùng path tương đối
+        const BASE_URL = 'http://localhost:3000/api';
+
+        let currentHistory = [];
+        let isWaitingForAnswer = false;
+        let lastScore = null;
+
+        const DOM = {
+            client1Profile: document.getElementById('client1Profile'),
+            client2Profile: document.getElementById('client2Profile'),
+            qaHistory: document.getElementById('qaHistory'),
+            resultOutput: document.getElementById('matchmakerResultOutput'),
+            startAgent1: document.getElementById('startAgent1'),
+            continueAgent2: document.getElementById('continueAgent2'),
+            loadingIndicator: document.getElementById('matchmakerLoadingIndicator'),
+            statusMessage: document.getElementById('matchmakerStatusMessage'),
+            answerWarning: document.getElementById('answerWarning'),
+        };
+
+        async function generateInitialQuestions(client1Data, client2Data) {
+            const response = await fetch(BASE_URL + '/questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client1Data, client2Data }),
+            });
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({
+                    error: 'Unknown Error',
+                }));
+                throw new Error(
+                    `Agent 1 API error: HTTP ${response.status}. Details: ${errorBody.error}`
+                );
+            }
+            return response.json();
+        }
+
+        async function scoreCompatibility(client1Data, client2Data, historyString) {
+            const response = await fetch(BASE_URL + '/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client1Data, client2Data, historyString }),
+            });
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({
+                    error: 'Unknown Error',
+                }));
+                throw new Error(
+                    `Agent 2 Score API error: HTTP ${response.status}. Details: ${errorBody.error}`
+                );
+            }
+            return response.json();
+        }
+
+        async function generateFollowUpQuestions(
+            client1Data,
+            client2Data,
+            historyString,
+            currentScore
+        ) {
+            const response = await fetch(BASE_URL + '/followup-questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    client1Data,
+                    client2Data,
+                    historyString,
+                    currentScore,
+                }),
+            });
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({
+                    error: 'Unknown Error',
+                }));
+                throw new Error(
+                    `Agent 2 Follow-up API error: HTTP ${response.status}. Details: ${errorBody.error}`
+                );
+            }
+            return response.json();
+        }
+
+        function renderAnswerInputs() {
+            DOM.qaHistory.innerHTML = '';
+            if (currentHistory.length === 0) {
+                DOM.qaHistory.innerHTML =
+                    "<p class='text-gray-500 italic'>No questions have been asked yet. Click 'Start' to begin.</p>";
+                DOM.continueAgent2.disabled = true;
+                return;
+            }
+
+            let hasUnansweredQuestions = false;
+
+            currentHistory.forEach((item, index) => {
+                const container = document.createElement('div');
+                container.className = 'question-answer-container rounded-md';
+
+                const questionElement = document.createElement('p');
+                questionElement.className =
+                    'font-semibold text-primary-blue mb-2 text-sm';
+                questionElement.textContent = `Q${index + 1}: ${item.question}`;
+                container.appendChild(questionElement);
+
+                if (item.answer) {
+                    const answerElement = document.createElement('p');
+                    answerElement.className =
+                        'ml-4 text-gray-700 border-l-2 border-primary-green pl-2 italic text-xs';
+                    answerElement.textContent = `Client 2 Answer: ${item.answer}`;
+                    container.style.backgroundColor = '#ecfdf5';
+                    container.appendChild(answerElement);
+                } else {
+                    const answerInput = document.createElement('textarea');
+                    answerInput.id = `answerInput-${index}`;
+                    answerInput.className =
+                        'w-full p-2 border border-yellow-400 rounded-lg focus:ring-yellow-500 focus:border-yellow-500 mt-2 text-xs';
+                    answerInput.placeholder = "Type Client 2's answer here...";
+                    answerInput.rows = 2;
+                    container.appendChild(answerInput);
+                    container.style.backgroundColor = '#fffbeb';
+                    hasUnansweredQuestions = true;
+                }
+
+                DOM.qaHistory.appendChild(container);
+            });
+
+            DOM.qaHistory.scrollTop = DOM.qaHistory.scrollHeight;
+            DOM.answerWarning.classList.toggle('hidden', !hasUnansweredQuestions);
+
+            DOM.startAgent1.disabled = hasUnansweredQuestions;
+            DOM.continueAgent2.disabled = !hasUnansweredQuestions;
+            isWaitingForAnswer = hasUnansweredQuestions;
+        }
+
+        function readAndValidateAnswers() {
+            let allAnswered = true;
+            currentHistory.forEach((item, index) => {
+                if (!item.answer) {
+                    const inputElement = document.getElementById(
+                        'answerInput-' + index
+                    );
+                    const answerText = inputElement ? inputElement.value.trim() : '';
+
+                    if (answerText.length > 0) {
+                        item.answer = answerText;
+                        if (inputElement) {
+                            inputElement.classList.remove('ring-4', 'ring-red-400');
+                        }
+                    } else {
+                        allAnswered = false;
+                        if (inputElement) {
+                            inputElement.classList.add('ring-4', 'ring-red-400');
+                        }
+                    }
+                }
+            });
+            DOM.answerWarning.classList.toggle('hidden', allAnswered);
+            return allAnswered;
+        }
+
+        function toggleLoading(isLoading) {
+            DOM.startAgent1.disabled = isLoading || isWaitingForAnswer;
+            DOM.continueAgent2.disabled = isLoading || !isWaitingForAnswer;
+
+            DOM.loadingIndicator.classList.toggle('hidden', !isLoading);
+            if (isLoading) {
+                DOM.resultOutput.textContent = 'Processing...';
+            } else if (DOM.resultOutput.textContent === 'Processing...') {
+                DOM.resultOutput.textContent = 'Awaiting Command...';
+            }
+        }
+
+        async function startMatching() {
+            const client1Data = DOM.client1Profile.value.trim();
+            const client2Data = DOM.client2Profile.value.trim();
+
+            if (!client1Data || !client2Data) {
+                alert('Please enter both Client 1 and Client 2 Data before starting.');
+                return;
+            }
+
+            currentHistory = [];
+            lastScore = null;
+            DOM.statusMessage.classList.add('hidden');
+            DOM.answerWarning.classList.add('hidden');
+
+            toggleLoading(true);
+
+            try {
+                const apiResult = await generateInitialQuestions(
+                    client1Data,
+                    client2Data
+                );
+
+                currentHistory = apiResult.Question.map((q) => ({
+                    question: q,
+                    answer: null,
+                }));
+
+                DOM.resultOutput.textContent =
+                    'AGENT 1 (Question Generation) SUCCESS:\n\n' +
+                    JSON.stringify(apiResult, null, 2);
+
+                DOM.statusMessage.textContent =
+                    '5 initial questions (Type: ' +
+                    apiResult.Type +
+                    ') generated based on both profiles. Please provide Client 2\'s answers and click "Continue".';
+                DOM.statusMessage.className =
+                    'mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-primary-blue text-sm';
+                DOM.statusMessage.classList.remove('hidden');
+
+                isWaitingForAnswer = true;
+                renderAnswerInputs();
+            } catch (error) {
+                DOM.resultOutput.textContent = 'AGENT 1 FAILED:\n' + error.message;
+                DOM.resultOutput.style.backgroundColor = '#b91c1c';
+                isWaitingForAnswer = false;
+            } finally {
+                toggleLoading(false);
+                DOM.resultOutput.style.backgroundColor = 'rgb(31 41 55)';
+            }
+        }
+
+        async function continueMatching() {
+            const client1Data = DOM.client1Profile.value.trim();
+            const client2Data = DOM.client2Profile.value.trim();
+
+            if (currentHistory.length === 0) {
+                alert('Please run Agent 1 first.');
+                return;
+            }
+
+            if (!readAndValidateAnswers()) {
+                return;
+            }
+
+            renderAnswerInputs();
+
+            let historyString = '';
+            currentHistory.forEach((item, index) => {
+                historyString += `\n[Q${index + 1}]: ${item.question}\n[A${
+                    index + 1
+                }]: ${item.answer}`;
+            });
+
+            toggleLoading(true);
+            DOM.statusMessage.classList.add('hidden');
+            isWaitingForAnswer = false;
+
+            try {
+                const apiResult = await scoreCompatibility(
+                    client1Data,
+                    client2Data,
+                    historyString
+                );
+
+                lastScore = apiResult.Score;
+                const reasonText = apiResult.ReasonBulletPoints
+                    ? apiResult.ReasonBulletPoints.map((p) => '- ' + p).join('\n')
+                    : '';
+
+                DOM.resultOutput.textContent =
+                    'AGENT 2 (Initial Score & Reason) SUCCESS:\n\n' +
+                    JSON.stringify(apiResult, null, 2);
+
+                if (lastScore < 50) {
+                    DOM.statusMessage.textContent =
+                        `❌ FINAL DECISION (Score: ${lastScore}/100, Type: ${apiResult.Type}): Compatibility is LOW. Evaluation is complete.\n\nReason:\n` +
+                        reasonText;
+                    DOM.statusMessage.className =
+                        'mt-4 p-3 rounded-lg text-left font-bold bg-red-100 text-red-800 whitespace-pre-wrap text-sm';
+                    isWaitingForAnswer = false;
+                } else if (lastScore >= 50 && lastScore <= 70) {
+                    await handleMidRangeScore(
+                        client1Data,
+                        client2Data,
+                        historyString
+                    );
+                } else if (lastScore > 70) {
+                    DOM.statusMessage.textContent =
+                        `✅ FINAL DECISION (Score: ${lastScore}/100, Type: ${apiResult.Type}): Compatibility is HIGH. Evaluation is complete.\n\nReason:\n` +
+                        reasonText;
+                    DOM.statusMessage.className =
+                        'mt-4 p-3 rounded-lg text-left font-bold bg-green-100 text-primary-green whitespace-pre-wrap text-sm';
+                    isWaitingForAnswer = false;
+                } else {
+                    throw new Error('Score out of range (0-100) or invalid format.');
+                }
+
+                DOM.statusMessage.classList.remove('hidden');
+            } catch (error) {
+                DOM.resultOutput.textContent = 'AGENT 2 FAILED:\n' + error.message;
+                DOM.resultOutput.style.backgroundColor = '#b91c1c';
+                isWaitingForAnswer = false;
+            } finally {
+                toggleLoading(false);
+                DOM.resultOutput.style.backgroundColor = 'rgb(31 41 55)';
+            }
+        }
+
+        async function handleMidRangeScore(
+            client1Data,
+            client2Data,
+            historyString
+        ) {
+            DOM.resultOutput.textContent +=
+                '\n\n--- SECONDARY CALL: Asking for Follow-up Questions (Score: ' +
+                lastScore +
+                ') ---';
+
+            try {
+                const followUpResult = await generateFollowUpQuestions(
+                    client1Data,
+                    client2Data,
+                    historyString,
+                    lastScore
+                );
+
+                const newQuestions = followUpResult.Question || [];
+                if (newQuestions.length > 0) {
+                    newQuestions.forEach((q) => {
+                        currentHistory.push({ question: q, answer: null });
+                    });
+                } else {
+                    DOM.statusMessage.textContent =
+                        '⚠️ MID-RANGE SCORE (' +
+                        lastScore +
+                        '/100): API không cung cấp thêm câu hỏi. Kết thúc đánh giá.';
+                    DOM.statusMessage.className =
+                        'mt-4 p-3 rounded-lg text-center font-medium bg-yellow-100 text-yellow-800 text-sm';
+                    isWaitingForAnswer = false;
+                    DOM.statusMessage.classList.remove('hidden');
+                    return;
+                }
+
+                DOM.resultOutput.textContent +=
+                    '\n\nSECONDARY CALL RESULT (Questions):\n' +
+                    JSON.stringify(followUpResult, null, 2);
+
+                renderAnswerInputs();
+                isWaitingForAnswer = true;
+
+                DOM.statusMessage.textContent =
+                    '⚠️ MID-RANGE SCORE (' +
+                    lastScore +
+                    '/100, Type: ' +
+                    followUpResult.Type +
+                    '): AI has provided ' +
+                    newQuestions.length +
+                    ' follow-up questions. Please provide answers and click "Continue" for final scoring.';
+                DOM.statusMessage.className =
+                    'mt-4 p-3 rounded-lg text-center font-medium bg-yellow-100 text-yellow-800 text-sm';
+                DOM.statusMessage.classList.remove('hidden');
+            } catch (error) {
+                DOM.resultOutput.textContent +=
+                    '\n\nSECONDARY CALL FAILED:\n' + error.message;
+                isWaitingForAnswer = false;
+                DOM.statusMessage.textContent =
+                    '🚨 LỖI (Score: ' +
+                    lastScore +
+                    '/100): Đánh giá bị gián đoạn do lỗi API. Vui lòng kiểm tra console.';
+                DOM.statusMessage.className =
+                    'mt-4 p-3 rounded-lg text-center font-bold bg-red-100 text-red-800 text-sm';
+                DOM.statusMessage.classList.remove('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // sample data
+            DOM.client1Profile.value =
+                'Name: Nguyen Van A. Age: 22. Job: IT Student. Habits: Sleeps early (10 PM), likes quiet, non-smoker. Budget: 3-4 Million VND/month. Hobby: Playing online games (with headphones) and light cooking. Living Area: Ho Chi Minh City (often hot, crowded streets, motorbike user).';
+            DOM.client2Profile.value =
+                'Name: Tran Thi B. Age: 23. Job: Designer. Habits: Sleeps late (1-2 AM), often listens to music with small speakers, uses e-cigarettes on the balcony. Budget: 3.5-4.5 Million VND/month. Hobby: Drawing, watching movies, and occasionally having friends visit on weekends. Living Area: Hanoi (colder winters, complex inner-city structure, prefers public transport/taxi).';
+
+            window.startMatching = startMatching;
+            window.continueMatching = continueMatching;
+
+            renderAnswerInputs();
+        });
+    })();
+</script>
+</body>
+</html>

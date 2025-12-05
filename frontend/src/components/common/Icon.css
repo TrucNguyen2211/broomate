@@ -1,0 +1,36 @@
+/* ----------------------------------------------------
+   1. Base Icon Styles (Applies to ALL icons)
+   ---------------------------------------------------- */
+.icon-root {
+    display: inline-flex;  /* Ensures proper alignment with text */
+    align-items: center;
+    justify-content: center;
+    line-height: 1;        /* Prevents extra spacing around icons */
+    /* Set default color to maintain flexibility */
+    color: #495057; /* A neutral gray color from the design system */
+}
+
+/* ----------------------------------------------------
+   2. Size Styles
+   ---------------------------------------------------- */
+
+/* Small Icon (e.g., Report on Profile Card, Bookmark on Listing) */
+.icon-small {
+    font-size: 16px; 
+    width: 16px;
+    height: 16px;
+}
+
+/* Medium Icon (Most common size, e.g., standard text icons) */
+.icon-medium {
+    font-size: 20px; 
+    width: 20px;
+    height: 20px;
+}
+
+/* Large Icon (e.g., for very prominent displays or headings) */
+.icon-large {
+    font-size: 24px; 
+    width: 24px;
+    height: 24px;
+}

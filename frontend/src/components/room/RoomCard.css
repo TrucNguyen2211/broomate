@@ -1,0 +1,289 @@
+/* ===============================
+   ROOM LIST + CARD (FINAL)
+   =============================== */
+
+/* Vùng list cuộn độc lập */
+.bm-rooms-scroll{
+  position: relative;
+  max-height: calc(100vh - 220px);  /* chỉnh theo layout thực tế của bạn */
+  overflow-y: auto;
+  overflow-x: hidden;               /* diệt thanh ngang */
+  scroll-snap-type: y proximity;    /* snap nhẹ từng card */
+  overscroll-behavior: contain;     /* không đẩy cuộn sang window */
+  max-width: 100%;
+}
+
+/* Stack các card */
+.bm-rooms-stack{
+  display: grid;
+  gap: 16px;
+  padding-inline: 8px;              /* chừa biên cho hiệu ứng phồng */
+}
+
+/* Khi hook đang kéo, tắt snap để không “bật ngược” */
+.bm-rooms-scroll[data-as-running="1"]{
+  scroll-snap-type: none !important;
+}
+
+/* Điểm snap cho từng card */
+.bm-room-card{ scroll-snap-align: start; }
+
+/* ===============================
+   ROOM CARD
+   =============================== */
+
+.bm-room-card{
+  /* Vars */
+  --card-bg: #47cfdb;               /* cyan như mock */
+  --card-radius: 22px;
+  --shadow: 0 2px 10px rgba(0,0,0,.06);
+  --ink-900: #0f172a;               /* viền/ink đậm */
+  --ink-800: #0b2430;               /* tiêu đề */
+  --ink-600: #1f2937;               /* text phụ */
+
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto; /* media | content | bookmark */
+  gap: clamp(12px, 2vw, 24px);
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: clamp(14px, 2.2vw, 20px);
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+
+  /* Hover elevate không đẩy layout, tránh overflow ngang */
+  transform: translateZ(0) scale(1);
+  transform-origin: center top;
+  transition:
+    transform .18s cubic-bezier(.2,.8,.2,1),
+    box-shadow .18s ease,
+    filter .18s ease;
+  will-change: transform, box-shadow, filter;
+
+  isolation: isolate;   /* stacking context riêng cho ::after */
+  contain: paint;       /* khoanh vùng paint để bóng không sinh overflow lạ */
+  overflow: visible;    /* cho aura hiển thị đầy đủ */
+  z-index: 0;
+}
+
+/* Aura mềm khi hover/focus (không dùng inset âm để khỏi tràn ngang) */
+.bm-room-card::after{
+  content: "";
+  position: absolute;
+  inset: 0;                                /* bằng đúng card */
+  border-radius: inherit;
+  box-shadow: 0 18px 40px rgba(0,0,0,.18); /* bóng đổ lan ra ngoài */
+  opacity: 0;
+  transition: opacity .18s ease;
+  pointer-events: none;
+  z-index: -1;                             /* nằm sau card trong context của nó */
+}
+
+/* Trạng thái nổi bật */
+.bm-room-card:hover,
+.bm-room-card:focus,
+.bm-room-card:focus-within{
+  transform: scale(1.01);                  /* nhẹ tay để không gây tràn */
+  z-index: 10;                             /* nổi lên trên các card khác */
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  filter: saturate(1.03) brightness(1.01);
+}
+.bm-room-card:hover::after,
+.bm-room-card:focus::after,
+.bm-room-card:focus-within::after{
+  opacity: 1;
+}
+
+/* Focus ring rõ ràng cho accessibility */
+.bm-room-card:focus{
+  outline: 3px solid rgba(2,132,199,.6);   /* cyan ring */
+  outline-offset: 2px;
+}
+
+/* Giảm chuyển động nếu người dùng thích tĩnh */
+@media (prefers-reduced-motion: reduce){
+  .bm-room-card{
+    transition: none;
+  }
+}
+
+/* ===============================
+   MEDIA (ẢNH TRÁI)
+   =============================== */
+
+.bm-room-media img{
+  width: clamp(220px, 28vw, 280px);
+  aspect-ratio: 4 / 3;                     /* giữ tỷ lệ, tránh layout shift */
+  height: auto;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.08);
+  display: block;
+  user-select: none;
+}
+
+/* ===============================
+   CONTENT (PHẢI)
+   =============================== */
+
+.bm-room-content{
+  align-self: center;
+  min-width: 0;
+}
+
+.bm-room-title{
+  margin: 0 0 8px 0;
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 800;
+  color: var(--ink-800);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.bm-room-facts{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--ink-600);
+  font-size: clamp(14px, 1.8vw, 18px);
+  display: grid;
+  gap: 6px;
+}
+.bm-room-facts .k{
+  font-weight: 600;
+  margin-right: 6px;
+  color: var(--ink-900);
+}
+
+.bm-landlord{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.bm-landlord .avatar{ font-size: 20px; }
+
+/* ===============================
+   BOOKMARK (GÓC PHẢI)
+   =============================== */
+
+.bm-bookmark{
+  align-self: end;
+  justify-self: end;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+}
+.bm-bookmark:focus{
+  outline: 2px solid rgba(2,132,199,.6);
+  outline-offset: 2px;
+}
+
+.bm-bookmark-box{
+  width: 56px;
+  height: 56px;
+  background: #d7f6fb;            /* ô vuông nhạt như mock */
+  border: 4px solid var(--ink-900);/* viền đậm */
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .06s ease, filter .12s ease;
+}
+.bm-bookmark:hover .bm-bookmark-box{ filter: brightness(.98); transform: translateY(-1px); }
+.bm-bookmark:active .bm-bookmark-box{ transform: translateY(0); }
+
+/* trạng thái đã bookmark (nếu có thêm class is-on ở button) */
+.bm-bookmark.is-on .bm-bookmark-box{
+  background: #b9f0f8;
+  box-shadow: inset 0 0 0 2px rgba(15,23,42,.2);
+}
+
+/* ===============================
+   MOBILE
+   =============================== */
+
+@media (max-width: 720px){
+  .bm-room-card{
+    grid-template-columns: 1fr;
+  }
+  .bm-room-media img{
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+  .bm-bookmark{
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
+/* Thiết bị touch: tắt phóng to để đỡ “nhảy” */
+@media (hover: none){
+  .bm-room-card:hover,
+  .bm-room-card:focus,
+  .bm-room-card:focus-within{
+    transform: none;
+    box-shadow: var(--shadow);
+    filter: none;
+    z-index: 0;
+  }
+  .bm-room-card::after{ opacity: 0; }
+}
+
+/* Container 3D cho card */
+.bm-card-3d{
+  perspective: 1200px;
+  perspective-origin: 50% 30%;
+}
+
+/* Biến cho tilt + scale hợp nhất */
+.bm-room-card{
+  transform-style: preserve-3d;
+  --rx: 0deg;
+  --ry: 0deg;
+  --scale: 1;
+  --mx: 50%;
+  --my: 50%;
+  transform: rotateX(var(--rx)) rotateY(var(--ry)) scale(var(--scale)); /* gộp với hover scale */
+}
+
+/* Khi hover (hook sẽ add class .is-hover) */
+.bm-room-card.is-hover{ --scale: 1.01; }
+
+/* Shine chạy theo chuột (hook set --mx/--my) */
+.bm-room-card::before{
+  content:"";
+  position:absolute; inset:0; border-radius: inherit; pointer-events:none;
+  background:
+    radial-gradient(600px 300px at var(--mx) var(--my),
+      rgba(255,255,255,.28), rgba(255,255,255,0) 60%),
+    linear-gradient(135deg, rgba(255,255,255,.04), rgba(0,0,0,.04));
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity .18s ease;
+  z-index: 1;
+}
+.bm-room-card.is-hover::before{ opacity: 1; }
+
+/* Parallax layer nhẹ */
+.bm-room-media{ transform: translateZ(10px); will-change: transform; }
+.bm-room-content{ transform: translateZ(6px); will-change: transform; }
+.bm-bookmark    { transform: translateZ(14px); will-change: transform; }
+
+/* Ảnh zoom nhẹ khi hover */
+.bm-room-card.is-hover .bm-room-media img{
+  transform: scale(1.04);
+  transition: transform .35s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Bookmark “hít” theo nghiêng */
+.bm-room-card.is-hover .bm-bookmark{
+  transform: translateZ(14px) translate(
+    calc(var(--ry) * .4),
+    calc(var(--rx) * -.4)
+  );
+  transition: transform .15s ease;
+}

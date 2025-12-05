@@ -1,0 +1,70 @@
+/* your-project/src/components/Modal/Modal.css */
+
+/* ----------------------------------------------------
+   1. Overlay (Dims the background)
+   ---------------------------------------------------- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* transparent black background */
+    display: flex;
+    justify-content: center; /* Horizontal center */
+    align-items: center;     /* Vertical center */
+    z-index: 1000; /* Above all UI */
+    
+    /* Transparency for animation(optional) */
+    opacity: 1; 
+    transition: opacity 0.3s ease;
+}
+
+/* ----------------------------------------------------
+   2. Content Box
+   ---------------------------------------------------- */
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    cursor: default; 
+    
+    /* Modification for animation (optionl) */
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+/* 3. Size Variants */
+.modal-small {
+    width: 350px;
+}
+.modal-medium {
+    width: 500px; /* AI Questions popup */
+}
+.modal-large {
+    width: 700px;
+    max-height: 90vh; /* prevents taking too much space*/
+}
+
+/* ----------------------------------------------------
+   4. Header & Body
+   ---------------------------------------------------- */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-body {
+    padding: 20px;
+    /* Scrollable if long */
+    overflow-y: auto; 
+}

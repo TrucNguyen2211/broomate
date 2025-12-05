@@ -1,0 +1,49 @@
+.lp-card{
+  --bg:#B2EBF2; --ink:#0b2430; --muted:#5b6a71;
+  background:var(--bg); border-radius:16px; padding:14px; width:360px;
+  color:var(--ink); box-shadow:0 1px 6px rgba(0,0,0,.06);
+}
+
+.lp-media{ position:relative; border-radius:16px; overflow:hidden; }
+.lp-media img{ width:100%; height:200px; object-fit:cover; display:block; }
+.lp-chip{ position:absolute; left:10px; top:10px; background:#3b82f6; color:#fff; font-size:12px; padding:6px 10px; border-radius:10px; }
+.lp-status{ position:absolute; right:10px; top:10px; background:#ef4444; color:#fff; font-size:12px; padding:6px 10px; border-radius:10px; }
+.lp-dots{ position:absolute; left:50%; bottom:8px; transform:translateX(-50%); display:flex; gap:6px; }
+.lp-dots .dot{ width:6px; height:6px; border-radius:999px; background:#fff; opacity:.85; }
+
+/* Title + location cùng hàng, không vỡ dòng */
+.lp-titleRow{
+  display:flex; align-items:center; gap:12px; margin-top:10px;
+  white-space:nowrap;
+}
+.lp-title{
+  margin:0; font-weight:800; font-size:20px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  flex:1 1 auto;                      /* chiếm phần còn lại */
+}
+.lp-locChip{
+  flex:0 0 auto; max-width:55%;
+  padding:6px 10px; border-radius:999px; background:#e6f8fb; color:#0f4b57;
+  display:flex; align-items:center; gap:6px; font-size:12px;
+}
+.lp-locChip .text-ellipsis{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.lp-desc{ margin:8px 0 10px; color:#334155; line-height:1.45; font-size:14px; }
+
+/* Contact / Renter */
+.lp-contact{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.lp-avatars{ display:flex; }
+.lp-avatars .avatar-root{ width:32px; height:32px; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.06); margin-left:-6px; border-radius:999px; }
+.lp-avatars .avatar-root:first-child{ margin-left:0; }
+.lp-name{ color:#2563eb; text-decoration:none; font-weight:500; }
+
+.lp-renter{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.lp-renter .k{ color:#475569; min-width:60px; }
+.lp-renterInfo{ display:flex; align-items:center; gap:8px; }
+.lp-renterInfo .avatar-root{ width:32px; height:32px; border-radius:999px; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.06); }
+
+/* Meta table */
+.lp-meta{ display:grid; gap:8px; font-size:14px; }
+.lp-meta .row{ display:grid; grid-template-columns: 1fr auto; gap:12px; }
+.lp-meta .k{ color:#475569; }
+.lp-meta .v{ font-weight:700; }

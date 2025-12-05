@@ -1,0 +1,53 @@
+/* Wrapper */
+.ldb-wrap{ padding:16px; }
+
+/* Teal panels giống mock */
+.ldb-panel{
+  background:#B2EBF2;
+  border-radius:20px;
+  padding:16px 20px;
+  margin-bottom:16px;
+}
+
+/* Titles + separators */
+.ldb-h1{ font-weight:700; font-size:32px; line-height:40px; color:#212121; margin:0 0 6px; }
+.ldb-sub{ font-size:16px; color:#424242; margin:0 0 4px; }
+.ldb-meta{ font-size:14px; color:#424242; margin:0; }
+.ldb-h2{ font-weight:600; font-size:24px; line-height:32px; color:#424242; margin:0 0 8px; }
+.ldb-sep{ border:0; border-top:1px solid rgba(0,0,0,.75); margin:6px 0 12px; }
+
+/* KPI row: [Total] [Available] [Rented] */
+.ldb-kpis{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:12px;
+}
+.ldb-kpi{
+  background:#e6fbff;
+  border-radius:12px;
+  padding:12px 14px;
+  display:flex; justify-content:space-between; align-items:center;
+  color:#0b2430;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06) inset;
+}
+.ldb-kpi .k{ opacity:.8; }
+
+/* Horizontal published list */
+.ldb-hscroll {
+  display: flex;
+  justify-content: flex-start;  /* không kéo dãn ra */
+  gap: 24px;                    /* khoảng cách đều, nhỏ */
+  overflow-x: auto;
+  padding: 1.5rem 0;
+}
+
+.ldb-item{
+  flex: 0 0 360px;           /* đúng bằng card */
+  max-width: 360px;
+  scroll-snap-align: start;
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .ldb-item{ min-width: min(92vw, 560px); }
+}

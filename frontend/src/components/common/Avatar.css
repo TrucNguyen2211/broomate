@@ -1,0 +1,46 @@
+/* ----------------------------------------------------
+   1. Root Container
+   ---------------------------------------------------- */
+.avatar-root {
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background-color: #ced4da;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+/* 2. Size Variants */
+.avatar-small {
+    width: 30px;
+    height: 30px; 
+    font-size: 14px;
+}
+.avatar-medium {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+}
+.avatar-large {
+    width: 80px;
+    height: 80px;
+    font-size: 30px;
+}
+
+/* ----------------------------------------------------
+   3. Content (Image or Fallback Text)
+   ---------------------------------------------------- */
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+}
+
+.avatar-fallback {
+    color: white;
+    font-weight: 600;
+}

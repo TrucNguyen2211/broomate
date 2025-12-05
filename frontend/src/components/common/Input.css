@@ -1,0 +1,51 @@
+/* ----------------------------------------------------
+   1. Base Styles (Applies to both <input> and <textarea>)
+   ---------------------------------------------------- */
+.input-root {
+    box-sizing: border-box; /* Assures padding does not go over border */
+    width: 100%;            /* Fills parent container by default */
+    padding: 10px 12px;
+    border: 1px solid #ced4da; /* Bright grey border */
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: inherit;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    resize: none; /* prevents Textarea size control for design consistency */
+}
+
+/* For focus */
+.input-root:focus {
+    outline: none; /* removes browser default focus */
+    border-color: #007bff; /* Blue highlight */
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Light blue shadow */
+}
+
+/* ----------------------------------------------------
+   2. Variant Styles
+   ---------------------------------------------------- */
+
+/* Default Variant (Profile Edit, basic forms) */
+.input-default {
+    /* Uses default style */
+    background-color: white;
+}
+
+/* Search Bar Variant (Tenant Dashboard) */
+.input-search-bar {
+    padding: 14px 20px;
+    font-size: 18px;
+    border-radius: 8px;
+    background-color: #f8f9fa; /* Very light background */
+}
+
+/* Chat Bar Variant (Message Detail) */
+.input-chat-bar {
+    padding: 8px 10px;
+    font-size: 16px;
+    border-radius: 20px; /* Round edges */
+    border: 1px solid #e9ecef; /* Very thin borders */
+}
+.input-chat-bar:focus {
+    /* Remove box shadows on chatbar focus */
+    box-shadow: none; 
+}
