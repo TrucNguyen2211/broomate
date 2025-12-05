@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const TEST_MODE = process.env.TEST_MODE === 'true';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
 // ✅ ADD THESE DEBUG LOGS
@@ -14,6 +15,7 @@ console.log('   PORT:', process.env.PORT);
 console.log('   TEST_MODE (raw):', process.env.TEST_MODE);
 console.log('   TEST_MODE (boolean):', TEST_MODE);
 console.log('   GEMINI_API_KEY:', GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 20) + '...' : 'NOT SET')
+console.log('   GEMINI_MODEL:', GEMINI_MODEL);
 
 if (TEST_MODE) {
   console.log('🧪 TEST MODE ENABLED - Using mock data instead of Gemini API');
