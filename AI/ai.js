@@ -17,7 +17,8 @@ const corsOptions = {
     'http://localhost:3000',  // React dev server
     'http://localhost:8080',   // Spring Boot (if needed)
     'https://broomate2211.vercel.app',  // Frontend production
-    'https://broomate.onrender.com'     // Backend production
+    'https://broomate.onrender.com',    // Backend production
+    'https://broomateai.vercel.app'     // AI service itself (for testing)
   ],
   credentials: true
 };

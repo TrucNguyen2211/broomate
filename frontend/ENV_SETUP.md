@@ -13,8 +13,8 @@ REACT_APP_API_BASE_URL=https://broomate.onrender.com/api
 # WebSocket Configuration
 REACT_APP_WS_BASE_URL=https://broomate.onrender.com
 
-# AI Service URL (nếu có)
-REACT_APP_AI_API_URL=http://localhost:3001/api
+# AI Service URL
+REACT_APP_AI_API_URL=https://broomateai.vercel.app/api
 ```
 
 ### 2. Cho Local Development
@@ -37,6 +37,7 @@ Nếu deploy lên Vercel, cần set Environment Variables trong Vercel Dashboard
 |------|-------|
 | `REACT_APP_API_BASE_URL` | `https://broomate.onrender.com/api` |
 | `REACT_APP_WS_BASE_URL` | `https://broomate.onrender.com` |
+| `REACT_APP_AI_API_URL` | `https://broomateai.vercel.app/api` |
 
 ### 4. Restart Development Server
 
