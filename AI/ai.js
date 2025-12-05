@@ -21,7 +21,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.get('/api/debug-cors', (req, res) => {
+app.get('/debug-cors', (req, res) => {
   res.json({
     ok: true,
     url: req.url,
@@ -38,8 +38,8 @@ app.use(bodyParser.json());
 // --- ROUTE ATTACHMENT ---
 // Lúc này FE baseURL = https://broomateai.vercel.app/api
 // nên ở đây PHẢI mount dưới '/api'
-app.use('/api', imageRouter);
-app.use('/api', scoreRouter);
+app.use('/', imageRouter);
+app.use('/', scoreRouter);
 
 // --- SERVER STARTUP ---
 // Only start server if not running as Vercel serverless function
