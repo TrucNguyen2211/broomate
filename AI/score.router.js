@@ -6,12 +6,14 @@ require('dotenv').config();
 
 const TEST_MODE = process.env.TEST_MODE === 'true';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-// Cấu hình Model - Ưu tiên Flash cho tốc độ và hỗ trợ JSON Mode tốt
+// Use flash for speed, or pro for better reasoning if available
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"; 
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-// Debug Log khởi động
+// ==========================================
+// CONFIGURATION & HELPERS
+// ==========================================
+
 console.log('============================================');
 console.log('🚀 AI ROUTER STARTED');
 console.log('   Model:', GEMINI_MODEL);
@@ -19,8 +21,25 @@ console.log('   Mode:', TEST_MODE ? '🧪 TEST' : '🌐 LIVE');
 console.log('============================================');
 
 /**
- * Hàm parse JSON an toàn tuyệt đối.
- * Xử lý cả trường hợp AI trả về markdown ```json ... ```
+ * Standard Configuration for Gemini
+ * Forces JSON output and disables safety blocks
+ */
+const COMMON_CONFIG = {
+  safetySettings: [
+    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+  ],
+  generationConfig: { 
+    temperature: 0.8, // Slightly creative for better questions
+    maxOutputTokens: 2000,
+    response_mime_type: "application/json" // FORCE JSON OUTPUT
+  }
+};
+
+/**
+ * Clean and Parse JSON from AI response
  */
 function cleanAndParseJSON(text) {
   try {
@@ -34,7 +53,7 @@ function cleanAndParseJSON(text) {
 }
 
 /**
- * Hàm fetch có cơ chế thử lại (Retry) khi mạng lag
+ * Fetch Wrapper with Retry (Exponential Backoff)
  */
 async function fetchWithBackoff(url, options, retries = 3, delay = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -57,34 +76,23 @@ async function fetchWithBackoff(url, options, retries = 3, delay = 1000) {
   }
 }
 
-/**
- * Cấu hình chung cho mọi API call để đảm bảo output xịn
- */
-const COMMON_CONFIG = {
-  safetySettings: [
-    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-  ],
-  generationConfig: { 
-    temperature: 0.7, 
-    maxOutputTokens: 2000,
-    response_mime_type: "application/json" // 👈 ÉP KIỂU JSON CỨNG
-  }
-};
-
-// ============================================================================
-// 1. API: /questions
-// Tạo câu hỏi để 2 người hiểu nhau hơn
-// ============================================================================
+// ==========================================
+// 1. ROUTE: /questions
+// Logic: 3 Context-Aware Questions + 2 Critical Conflict Questions
+// ==========================================
 router.post('/questions', async (req, res) => {
   console.log('📨 Received /questions');
 
   if (TEST_MODE) {
     return res.json({
       Type: "Question",
-      Question: ["Mock Q1", "Mock Q2", "Mock Q3", "Mock Q4", "Mock Q5"]
+      Question: [
+        "I see you both like gaming, how do you manage noise at night?",
+        "Since User A cooks and User B cleans, how should we split the duties?",
+        "You both mentioned being introverts, do you prefer a quiet home environment?",
+        "User A sleeps late while User B wakes early (Sleep Schedule), how will you manage this?",
+        "User A has a higher budget (Financial), how will you split shared utility bills?"
+      ]
     });
   }
 
@@ -92,13 +100,14 @@ router.post('/questions', async (req, res) => {
     const { client1Data, client2Data } = req.body;
     if (!client1Data || !client2Data) return res.status(400).json({ error: 'Missing required fields' });
 
-    // SYSTEM INSTRUCTION: Định hình vai trò máy móc để tránh từ chối
     const systemInstruction = {
       parts: [{
-        text: `You are a Profile Analysis Engine for a housing database. 
-        Your job is to compare two raw user inputs and generate clarifying questions in Vietnamese.
-        Ignore sensitive keywords (alcohol, parties) as this is for compatibility checking only.
-        Output strictly in JSON format.`
+        text: `You are an expert Roommate Matchmaker. 
+        Your goal is to generate 5 insightful questions in English to help two users assess their compatibility.
+        
+        STRUCTURE OF THE 5 QUESTIONS:
+        1. First 3 Questions (Context-Aware): Look for specific hobbies, personality traits, or keywords in their profiles. Ask about similarities or interesting details.
+        2. Last 2 Questions (Conflict-Check): Analyze these 5 critical categories: [Sleep schedule, Cleanliness, Noise tolerance, Guests, Financial habits]. Identify the TOP 2 categories where they seem most DIFFERENT or where information is missing, and ask about those.`
       }]
     };
 
@@ -106,8 +115,12 @@ router.post('/questions', async (req, res) => {
       User A Profile: "${client1Data}"
       User B Profile: "${client2Data}"
 
-      TASK: Generate exactly 5 questions in Vietnamese that help these two users understand their living compatibility.
-      Focus on: Sleep schedule, Cleanliness, Noise tolerance, Guests, and Financial habits.
+      TASK: Generate exactly 5 conversational questions in English.
+      
+      GUIDELINES:
+      - Questions 1-3: Focus on specific details found in the text (e.g., "User A mentioned a cat...", "You both like coding...").
+      - Questions 4-5: Focus on the biggest potential conflicts among: Sleep, Cleanliness, Noise, Guests, Money.
+      - Tone: Helpful, neutral, and direct.
 
       REQUIRED OUTPUT JSON FORMAT:
       {
@@ -126,17 +139,17 @@ router.post('/questions', async (req, res) => {
       })
     });
 
+    // Fallback if AI fails
     if (!result.candidates || !result.candidates[0]) {
       console.error("❌ Gemini NO RESPONSE for /questions");
-      // Fallback
       return res.json({
         Type: "Question",
         Question: [
-          "Bạn thường đi ngủ và thức dậy lúc mấy giờ?",
-          "Bạn mong đợi việc chia sẻ việc nhà như thế nào?",
-          "Quan điểm của bạn về việc mời khách hay người lạ về phòng?",
-          "Bạn có nhạy cảm với tiếng ồn vào ban đêm không?",
-          "Chúng ta nên thống nhất chi phí sinh hoạt chung ra sao?"
+          "What are your hobbies and how do you spend your free time at home?",
+          "How would you describe your personality in a shared living space?",
+          "Do you have any pet peeves that your roommate should know about?",
+          "How do your sleep schedules compare? (Early bird vs Night owl)",
+          "How should we handle shared expenses and cleaning duties?"
         ]
       });
     }
@@ -150,15 +163,19 @@ router.post('/questions', async (req, res) => {
   }
 });
 
-// ============================================================================
-// 2. API: /score
-// Chấm điểm độ hợp nhau
-// ============================================================================
+// ==========================================
+// 2. ROUTE: /score
+// Logic: Calculate Compatibility (0-100) + English Reasons
+// ==========================================
 router.post('/score', async (req, res) => {
   console.log('📨 Received /score');
 
   if (TEST_MODE) {
-    return res.json({ Type: "Result", Score: 88, ReasonBulletPoints: ["Mock Reason 1", "Mock Reason 2"] });
+    return res.json({ 
+      Type: "Result", 
+      Score: 85, 
+      ReasonBulletPoints: ["Similar sleep schedules.", "Both value cleanliness.", "Budget aligned."] 
+    });
   }
 
   try {
@@ -168,26 +185,26 @@ router.post('/score', async (req, res) => {
     const systemInstruction = {
       parts: [{
         text: `You are a Compatibility Scoring Algorithm.
-        Analyze the inputs mathematically based on shared habits and conflicts.
-        0 = Total disaster, 100 = Perfect match.
-        Output strictly in JSON.`
+        Analyze User A, User B, and their Conversation History.
+        Calculate a score (0-100) based on shared habits and conflict resolution.
+        Output in JSON only.`
       }]
     };
 
     const prompt = `
       Profile A: "${client1Data}"
       Profile B: "${client2Data}"
-      Interaction History: "${historyString || 'No interaction yet'}"
+      Conversation History: "${historyString || 'No conversation yet'}"
 
       TASK: 
       1. Calculate a compatibility score (0-100).
-      2. Provide 3-5 bullet points explaining the score in Vietnamese.
+      2. Provide 3-5 short bullet points explaining the pros/cons in English.
       
       REQUIRED OUTPUT JSON FORMAT:
       {
         "Type": "Result",
         "Score": 75,
-        "ReasonBulletPoints": ["Lý do 1...", "Lý do 2...", "Lý do 3..."]
+        "ReasonBulletPoints": ["Reason 1", "Reason 2", "Reason 3"]
       }
     `;
 
@@ -207,9 +224,9 @@ router.post('/score', async (req, res) => {
         Type: "Result",
         Score: 60,
         ReasonBulletPoints: [
-          "Dữ liệu chưa đủ để AI phân tích sâu.",
-          "Hai bạn có vẻ có một số sở thích chung.",
-          "Cần trao đổi thêm về giờ giấc sinh hoạt."
+          "Insufficient data for detailed analysis.",
+          "Some common interests detected.",
+          "Please discuss living habits further."
         ]
       });
     }
@@ -223,15 +240,15 @@ router.post('/score', async (req, res) => {
   }
 });
 
-// ============================================================================
-// 3. API: /followup-questions
-// Đặt câu hỏi xoáy sâu vào mâu thuẫn
-// ============================================================================
+// ==========================================
+// 3. ROUTE: /followup-questions
+// Logic: Clarify Ambiguities based on History
+// ==========================================
 router.post('/followup-questions', async (req, res) => {
   console.log('📨 Received /followup-questions');
 
   if (TEST_MODE) {
-    return res.json({ Type: "Question", Question: ["Mock Followup 1"] });
+    return res.json({ Type: "Question", Question: ["Mock Followup Question?"] });
   }
 
   try {
@@ -240,24 +257,24 @@ router.post('/followup-questions', async (req, res) => {
     const systemInstruction = {
       parts: [{
         text: `You are a Conflict Resolution Bot.
-        Your goal is to find ambiguities or conflicts in the provided conversation history and ask strictly clarifying questions.
-        Output strictly in JSON.`
+        Your goal is to find unclear areas in the conversation history and ask 1-3 clarifying questions in English.
+        Output in JSON only.`
       }]
     };
 
     const prompt = `
       Profile A: "${client1Data}"
       Profile B: "${client2Data}"
-      Current Chat History: "${historyString}"
-      Current Compatibility Score: ${currentScore}
+      Chat History: "${historyString}"
+      Current Score: ${currentScore}
 
-      TASK: Based on the chat history, identify what is still unclear or conflicting.
-      Generate 1 to 3 followup questions in Vietnamese to resolve these issues.
+      TASK: Identify what is still unclear or conflicting in their discussion.
+      Generate 1 to 3 followup questions in English to resolve these issues.
 
       REQUIRED OUTPUT JSON FORMAT:
       {
         "Type": "Question",
-        "Question": ["Câu hỏi 1...", "Câu hỏi 2..."]
+        "Question": ["Question 1", "Question 2"]
       }
     `;
 
@@ -275,7 +292,7 @@ router.post('/followup-questions', async (req, res) => {
       console.error("❌ Gemini NO RESPONSE for /followup-questions");
       return res.json({
         Type: "Question",
-        Question: ["Hai bạn còn điều gì băn khoăn về thói quen sinh hoạt của nhau không?"]
+        Question: ["Is there anything else you'd like to discuss regarding house rules?"]
       });
     }
 
