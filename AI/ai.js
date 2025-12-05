@@ -1,58 +1,55 @@
-// ai.js
+// AI/ai.js
 
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 require('dotenv').config(); 
 
-// Import các Router đã tạo
 const imageRouter = require('./image.router.js');
 const scoreRouter = require('./score.router.js');
 
 const app = express();
-// Đặt cổng mặc định là 3001 (hoặc đọc từ env)
 const PORT = process.env.PORT || 3001; 
 
-// CORS
+// --- 1. CẤU HÌNH CORS CHUẨN ---
+// Cho phép preflight và credentials
 const corsOptions = {
-  origin: true,          // cho phép mọi origin (Vercel sẽ tự trả đúng Origin)
-  credentials: true
+  origin: true, // Reflection: cho phép mọi origin gọi vào (development/testing)
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable pre-flight cho tất cả routes
 
-app.get('/debug-cors', (req, res) => {
+app.use(bodyParser.json());
+
+// --- 2. MOUNT ROUTES VỚI PREFIX '/api' ---
+// Quan trọng: Vì Vercel gửi request dạng '/api/xxx', ta phải hứng ở '/api'
+app.get('/api/debug-cors', (req, res) => {
   res.json({
     ok: true,
+    message: "CORS is working check",
     url: req.url,
-    origin: req.headers.origin || null,
+    origin: req.headers.origin || "No origin header",
   });
 });
 
+// Mount router con vào /api
+app.use('/api', imageRouter); // -> /api/verify-image
+app.use('/api', scoreRouter); // -> /api/questions, /api/score
 
-app.options('*', cors(corsOptions)); // handle OPTIONS preflight
+// Handler cho root (Health check)
+app.get('/', (req, res) => {
+    res.send("Broomate AI Service is running.");
+});
 
-// Body Parser
-app.use(bodyParser.json());
-
-// --- ROUTE ATTACHMENT ---
-// Lúc này FE baseURL = https://broomateai.vercel.app/api
-// nên ở đây PHẢI mount dưới '/api'
-app.use('/', imageRouter);
-app.use('/', scoreRouter);
-
-// --- SERVER STARTUP ---
-// Only start server if not running as Vercel serverless function
+// --- 3. SERVER STARTUP ---
 if (process.env.VERCEL !== '1') {
     app.listen(PORT, () => {
-        console.log(`\n✅ Unified Server is running securely on http://localhost:${PORT}`);
-        console.log(`\nEndpoints available on Port ${PORT}:`);
-        console.log(`  POST /api/verify-image`);
-        console.log(`  POST /api/questions`);
-        console.log(`  POST /api/score`);
-        console.log(`  POST /api/followup-questions`);
+        console.log(`\n✅ Server running on http://localhost:${PORT}`);
     });
 }
 
-// Export app for Vercel serverless functions
 module.exports = app;
