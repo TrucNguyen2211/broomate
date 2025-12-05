@@ -36,6 +36,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // OPTIONS requests (CORS preflight) - allow all
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        // Health check endpoint - keep server alive on Render free tier
+                        .requestMatchers("/health", "/actuator/health", "/ping").permitAll()
                         // Public endpoints - no authentication required
                         .requestMatchers(
                                 "/api/auth/**",
@@ -69,7 +73,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ CORS Configuration
+    // ✅ CORS Configuration - Optimized for Render free tier
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -81,6 +85,8 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(86400L); // Cache preflight response for 24 hours (reduce CORS checks)
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type")); // Expose important headers
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
