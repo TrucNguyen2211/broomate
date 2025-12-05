@@ -15,7 +15,9 @@ const PORT = process.env.PORT || 3001;
 const corsOptions = {
   origin: [
     'http://localhost:3000',  // React dev server
-    'http://localhost:8080'   // Spring Boot (if needed)
+    'http://localhost:8080',   // Spring Boot (if needed)
+    'https://broomate2211.vercel.app',  // Frontend production
+    'https://broomate.onrender.com'     // Backend production
   ],
   credentials: true
 };
@@ -38,10 +40,16 @@ app.use('/api', imageRouter);
 app.use('/api', scoreRouter); 
 
 // --- SERVER STARTUP ---
-app.listen(PORT, () => {
-    console.log(`\n✅ Unified Server is running securely on http://localhost:${PORT}`);
-    console.log(`\nEndpoints available on Port ${PORT}:`);
-    console.log(`  POST /api/verify-image (Image Verification)`);
-    console.log(`  POST /api/v1/questions (Score & Questions)`);
-    console.log(`  POST /api/v1/score (Score & Questions)`);
-});
+// Only start server if not running as Vercel serverless function
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        console.log(`\n✅ Unified Server is running securely on http://localhost:${PORT}`);
+        console.log(`\nEndpoints available on Port ${PORT}:`);
+        console.log(`  POST /api/verify-image (Image Verification)`);
+        console.log(`  POST /api/v1/questions (Score & Questions)`);
+        console.log(`  POST /api/v1/score (Score & Questions)`);
+    });
+}
+
+// Export app for Vercel serverless functions
+module.exports = app;
