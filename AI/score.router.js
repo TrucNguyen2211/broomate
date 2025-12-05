@@ -8,7 +8,7 @@ const TEST_MODE = process.env.TEST_MODE === 'true';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // Hãy dùng dynamic như này:
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash-latest"; // Fallback an toàn
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"; // Fallback an toàn
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 // ✅ ADD THESE DEBUG LOGS
 console.log('🔍 Environment Variables:');
