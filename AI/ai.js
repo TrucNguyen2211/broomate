@@ -20,6 +20,16 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+app.get('/api/debug-cors', (req, res) => {
+  res.json({
+    ok: true,
+    url: req.url,
+    origin: req.headers.origin || null,
+  });
+});
+
+
 app.options('*', cors(corsOptions)); // handle OPTIONS preflight
 
 // Body Parser
