@@ -33,9 +33,12 @@ class WebSocketService {
     // ✅ Set connection lock
     this.isConnecting = true;
 
+    // Get WebSocket base URL from environment variable
+    const WS_BASE_URL = process.env.REACT_APP_WS_BASE_URL || 'http://localhost:8080';
+    
     this.connectionPromise = new Promise((resolve, reject) => {
       this.client = new Client({
-        webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+        webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws`),
         connectHeaders: {
           'Authorization': `Bearer ${token}`
         },
