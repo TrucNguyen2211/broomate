@@ -12,4 +12,4 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*SNAPSHOT.jar app.jar
 ENV JAVA_OPTS=""
-ENTRYPOINT ["sh","-c","echo \"$FIREBASE_SERVICE_ACCOUNT_JSON\" > /app/firebase.json && java $JAVA_OPTS -Dfirebase.credentials.path=/app/firebase.json -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "echo \"$FIREBASE_SERVICE_ACCOUNT_JSON\" > /app/firebase.json && exec java $JAVA_OPTS -Dfirebase.credentials.path=/app/firebase.json -jar /app/app.jar"]
