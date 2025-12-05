@@ -65,9 +65,10 @@ if (VISION_KEY_DATA) {
 const client = new ImageAnnotatorClient();
 
 // --- MULTER SETUP FOR FILE UPLOADS ---
-const UPLOADS_DIR = 'uploads';
+// Use OS temp dir (writable on Vercel) for uploads to avoid EROFS in read-only FS
+const UPLOADS_DIR = path.join(os.tmpdir(), 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR);
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 // Configure multer to store uploaded files temporarily
 const upload = multer({ dest: UPLOADS_DIR });
