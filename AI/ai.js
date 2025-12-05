@@ -24,6 +24,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // handle OPTIONS preflight
 
 // 2. Body Parser: Cần thiết cho các request JSON (từ scoreRouter)
 app.use(bodyParser.json());
