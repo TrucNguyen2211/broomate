@@ -21,4 +21,7 @@ public class NewMessageNotification extends WebSocketMessage {
     private String senderAvatar;
     private String content;
     private List<String> mediaUrls;
+    
+    // ✅ ADD THIS FIELD
+    private String timestamp;  // Message timestamp in ISO format
 }

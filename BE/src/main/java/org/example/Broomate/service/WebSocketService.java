@@ -25,7 +25,6 @@ public class WebSocketService {
      */
     public void sendNewMessageNotification(String userId, NewMessageNotification notification) {
         notification.setType("NEW_MESSAGE");
-        notification.setTimestamp(Timestamp.now().toString());
 
         log.info("🔔 Sending new message notification to user: {}", userId);
         log.info("📨 Notification content: {}", notification.getContent());
