@@ -80,7 +80,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000", 
                 "https://broomate2211.vercel.app",
-                "https://broomate.onrender.com"
+                "https://broomate.onrender.com",
+                "https://broomate.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         // Explicitly allow all headers including multipart/form-data headers
