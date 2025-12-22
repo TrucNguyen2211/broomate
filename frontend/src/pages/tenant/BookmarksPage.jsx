@@ -1,3 +1,5 @@
+// FE/src/pages/tenant/BookmarksPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -6,10 +8,6 @@ import {
 } from 'lucide-react';
 import tenantService from '../../services/tenantService';
 
-/**
- * BookmarksPage - Display user's saved/bookmarked rooms
- * ✅ Now using tenantService for all API calls
- */
 function BookmarksPage() {
   const navigate = useNavigate();
   const [bookmarks, setBookmarks] = useState([]);
@@ -17,12 +15,10 @@ function BookmarksPage() {
   const [error, setError] = useState('');
   const [deletingIds, setDeletingIds] = useState(new Set());
 
-  // Fetch bookmarks on mount
   useEffect(() => {
     fetchBookmarks();
   }, []);
 
-  // ✅ FIXED: Use tenantService instead of direct fetch
   const fetchBookmarks = async () => {
     setIsLoading(true);
     setError('');
@@ -34,7 +30,6 @@ function BookmarksPage() {
     } catch (err) {
       console.error('Error fetching bookmarks:', err);
       
-      // Handle 401 - redirect to login
       if (err.response?.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -48,25 +43,20 @@ function BookmarksPage() {
     }
   };
 
-  // ✅ FIXED: Use tenantService instead of direct fetch
   const handleUnbookmark = async (roomId, bookmarkId) => {
     if (!window.confirm('Remove this room from your bookmarks?')) {
       return;
     }
 
-    // Add to deleting set for loading state
     setDeletingIds(prev => new Set(prev).add(bookmarkId));
 
     try {
       await tenantService.removeBookmark(roomId);
-      
-      // Remove from local state
       setBookmarks(prev => prev.filter(b => b.id !== bookmarkId));
     } catch (err) {
       console.error('Error unbookmarking:', err);
       alert('Failed to remove bookmark. Please try again.');
     } finally {
-      // Remove from deleting set
       setDeletingIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(bookmarkId);
@@ -79,14 +69,12 @@ function BookmarksPage() {
     navigate(`/dashboard/tenant/room/${roomId}`);
   };
 
-  // Extract district from address
   const extractDistrict = (address) => {
     if (!address) return 'Unknown';
     const districtMatch = address.match(/District \d+|Binh Thanh|Phu Nhuan|Tan Binh|Go Vap|Thu Duc|Tan Phu/i);
     return districtMatch ? districtMatch[0] : 'HCMC';
   };
 
-  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
@@ -100,24 +88,22 @@ function BookmarksPage() {
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-purple-50">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <Loader className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading your bookmarks...</p>
+          <Loader className="w-12 h-12 text-teal-600 dark:text-teal-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Loading your bookmarks...</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-purple-50 p-4">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           <button
             onClick={fetchBookmarks}
             className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
@@ -130,13 +116,13 @@ function BookmarksPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-teal-50 to-purple-50">
+    <div className="h-full overflow-y-auto bg-gradient-to-br from-teal-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <div className="bg-white shadow-md sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-10 border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <button
             onClick={() => navigate('/dashboard/tenant')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 transition"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-3 transition"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="font-medium">Back to Dashboard</span>
@@ -144,11 +130,11 @@ function BookmarksPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <Bookmark className="w-8 h-8 text-teal-600" fill="currentColor" />
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Bookmark className="w-8 h-8 text-teal-600 dark:text-teal-400" fill="currentColor" />
                 My Bookmarks
               </h1>
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                 {bookmarks.length} saved room{bookmarks.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -169,11 +155,10 @@ function BookmarksPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {bookmarks.length === 0 ? (
-          // Empty state
           <div className="text-center py-16">
             <div className="text-6xl mb-4">📌</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Bookmarks Yet</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Bookmarks Yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Start bookmarking rooms you like to save them for later
             </p>
             <button
@@ -184,7 +169,6 @@ function BookmarksPage() {
             </button>
           </div>
         ) : (
-          // Bookmarks grid
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {bookmarks.map((bookmark) => {
               const room = bookmark.room;
@@ -193,7 +177,7 @@ function BookmarksPage() {
               return (
                 <div
                   key={bookmark.id}
-                  className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition overflow-hidden border border-gray-100 ${
+                  className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition overflow-hidden border border-gray-100 dark:border-gray-700 ${
                     isDeleting ? 'opacity-50 pointer-events-none' : ''
                   }`}
                 >
@@ -214,12 +198,10 @@ function BookmarksPage() {
                         }}
                       />
                       
-                      {/* Bookmarked Badge */}
                       <div className="absolute top-3 right-3 bg-teal-500 text-white p-2 rounded-full shadow-lg">
                         <Bookmark className="w-5 h-5" fill="currentColor" />
                       </div>
 
-                      {/* Saved Date */}
                       {bookmark.bookmarkedAt && (
                         <div className="absolute bottom-3 left-3 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
                           Saved {formatDate(bookmark.bookmarkedAt)}
@@ -230,35 +212,33 @@ function BookmarksPage() {
                     {/* Content */}
                     <div className="flex-1 p-4 flex flex-col">
                       <h3
-                        className="text-lg font-bold text-gray-900 mb-2 cursor-pointer hover:text-teal-600 transition line-clamp-1"
+                        className="text-lg font-bold text-gray-900 dark:text-white mb-2 cursor-pointer hover:text-teal-600 dark:hover:text-teal-400 transition line-clamp-1"
                         onClick={() => handleViewRoom(room.id)}
                         title={room?.title}
                       >
                         {room?.title || 'Untitled Room'}
                       </h3>
 
-                      {/* Description */}
                       {room?.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
                           {room.description}
                         </p>
                       )}
 
-                      {/* Details */}
                       <div className="space-y-2 mb-3 flex-1">
                         {room?.address && (
-                          <p className="text-sm text-gray-600 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-teal-500 flex-shrink-0" />
+                          <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-teal-500 dark:text-teal-400 flex-shrink-0" />
                             <span className="line-clamp-1" title={room.address}>
                               {room.address}
                             </span>
                           </p>
                         )}
                         
-                        <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
                           {room?.minimumStayMonths && (
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4 text-blue-500" />
+                              <Calendar className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                               Min. {room.minimumStayMonths} months
                             </span>
                           )}
@@ -275,40 +255,37 @@ function BookmarksPage() {
                         </div>
                       </div>
 
-                      {/* Amenities */}
                       <div className="flex flex-wrap gap-1 mb-3">
                         {room?.hasWindow && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
                             🪟 Window
                           </span>
                         )}
                         {room?.imageUrls && room.imageUrls.length > 0 && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
                             📷 {room.imageUrls.length} photo{room.imageUrls.length !== 1 ? 's' : ''}
                           </span>
                         )}
                         {room?.videoUrls && room.videoUrls.length > 0 && (
-                          <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 px-2 py-1 rounded-full">
                             🎥 Video tour
                           </span>
                         )}
                       </div>
 
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                        <div className="text-sm text-gray-600">
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
                           {room?.address ? extractDistrict(room.address) : 'HCMC'}
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-teal-600">
-                                {room.rentPricePerMonth?.toLocaleString('vi-VN')}
-                            </span>
-                            <span className="text-xl font-bold text-teal-600">₫</span>
-                            <span className="text-sm text-gray-500">/mo</span>
+                          <span className="text-xl font-bold text-teal-600 dark:text-teal-400">
+                            {room.rentPricePerMonth?.toLocaleString('vi-VN')}
+                          </span>
+                          <span className="text-xl font-bold text-teal-600 dark:text-teal-400">₫</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">/mo</span>
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
                       <div className="flex gap-2 mt-4">
                         <button
                           onClick={() => handleViewRoom(room.id)}
@@ -320,7 +297,7 @@ function BookmarksPage() {
                         <button
                           onClick={() => handleUnbookmark(room.id, bookmark.id)}
                           disabled={isDeleting}
-                          className="flex items-center justify-center px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center justify-center px-4 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Remove bookmark"
                         >
                           {isDeleting ? (
@@ -339,9 +316,8 @@ function BookmarksPage() {
         )}
       </div>
 
-      {/* Bottom CTA for mobile */}
       {bookmarks.length > 0 && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 shadow-lg">
           <button
             onClick={() => navigate('/dashboard/tenant/find-rooms')}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition font-semibold"

@@ -1,9 +1,13 @@
+// FE/src/pages/shared/AccountPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import userService from '../../services/userService';
+import { useTheme } from '../../contexts/ThemeContext';
 
 function AccountPage() {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +50,6 @@ function AccountPage() {
         return;
       }
 
-      // ✅ FIXED: No userId parameter needed - service handles it internally
       const data = userRole === 'TENANT' 
         ? await userService.getTenantProfile()
         : await userService.getLandlordProfile();
@@ -199,12 +202,12 @@ function AccountPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
-            userRole === 'TENANT' ? 'border-teal-600' : 'border-pink-600'
+            userRole === 'TENANT' ? 'border-teal-600 dark:border-teal-400' : 'border-pink-600 dark:border-pink-400'
           } mx-auto mb-4`}></div>
-          <p className="text-gray-600">Loading profile...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading profile...</p>
         </div>
       </div>
     );
@@ -213,9 +216,9 @@ function AccountPage() {
   // Error state
   if (error && !userData) {
     return (
-      <div className="h-full flex items-center justify-center p-4">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           <button
             onClick={fetchProfile}
             className={`px-6 py-2 text-white rounded-lg ${
@@ -233,16 +236,16 @@ function AccountPage() {
 
   // Dynamic theme colors based on role
   const theme = userRole === 'TENANT' ? {
-    gradient: 'from-teal-50 to-white',
+    gradient: 'from-teal-50 to-white dark:from-gray-900 dark:to-gray-800',
     avatarGradient: 'from-teal-400 to-teal-600',
     buttonPrimary: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700',
-    badge: 'bg-teal-100 text-teal-700',
+    badge: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300',
     ring: 'focus:ring-teal-500'
   } : {
-    gradient: 'from-pink-50 to-white',
+    gradient: 'from-pink-50 to-white dark:from-gray-900 dark:to-gray-800',
     avatarGradient: 'from-pink-400 to-pink-600',
     buttonPrimary: 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
-    badge: 'bg-pink-100 text-pink-700',
+    badge: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
     ring: 'focus:ring-pink-500'
   };
 
@@ -251,10 +254,10 @@ function AccountPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             {userRole === 'TENANT' ? 'Tenant' : 'Landlord'} Account
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             {userRole === 'TENANT' 
               ? 'Manage your profile and roommate preferences' 
               : 'Manage your landlord profile'
@@ -263,8 +266,8 @@ function AccountPage() {
         </div>
 
         {/* Section 1: Current Profile */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Current Profile</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Current Profile</h2>
           
           {/* Avatar */}
           <div className="flex justify-center mb-6">
@@ -272,7 +275,7 @@ function AccountPage() {
               <img
                 src={userData.avatar || userData.avatarUrl}
                 alt={userData.name}
-                className="w-24 h-24 rounded-full object-cover"
+                className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
               />
             ) : (
               <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${theme.avatarGradient} flex items-center justify-center text-white text-3xl font-bold`}>
@@ -287,8 +290,8 @@ function AccountPage() {
             <ProfileField label="Email" value={userData.email} />
             {userData.phone && <ProfileField label="Phone" value={userData.phone} />}
             
-            <div className="flex border-b border-gray-200 pb-3">
-              <span className="font-semibold text-gray-700 w-48">Account Type:</span>
+            <div className="flex border-b border-gray-200 dark:border-gray-700 pb-3">
+              <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Account Type:</span>
               <span className={`px-3 py-1 ${theme.badge} rounded-full text-sm font-semibold`}>
                 {userRole === 'TENANT' ? 'Tenant' : 'Landlord'}
               </span>
@@ -300,7 +303,7 @@ function AccountPage() {
             {userRole === 'TENANT' && (
               <>
                 <div className="pt-4">
-                  <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                     <span className="text-xl">👥</span>
                     Roommate Preferences
                   </h3>
@@ -325,10 +328,12 @@ function AccountPage() {
             )}
 
             {/* Account Status */}
-            <div className="flex border-b border-gray-200 pb-3">
-              <span className="font-semibold text-gray-700 w-48">Account Status:</span>
+            <div className="flex border-b border-gray-200 dark:border-gray-700 pb-3">
+              <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Account Status:</span>
               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                userData.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                userData.isActive 
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
               }`}>
                 {userData.isActive ? 'Active' : 'Inactive'}
               </span>
@@ -345,8 +350,8 @@ function AccountPage() {
         </div>
 
         {/* Section 2: Account Settings */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Account Settings</h2>
           <div className="space-y-4">
             <button
               onClick={() => {
@@ -367,8 +372,8 @@ function AccountPage() {
         </div>
 
         {/* Section 3: Logout */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Danger Zone</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Danger Zone</h2>
           <button
             onClick={handleLogout}
             className="w-full bg-red-500 text-white font-semibold py-3 rounded-lg hover:bg-red-600 transition"
@@ -378,11 +383,11 @@ function AccountPage() {
         </div>
 
         {/* Section 4: Account Deactivation */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mt-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Management</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mt-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Account Management</h2>
           
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-yellow-800">
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
               ⚠️ <strong>Deactivate Account:</strong> Your account will be hidden but can be reactivated later. Your data will be preserved.
             </p>
           </div>
@@ -443,9 +448,9 @@ function AccountPage() {
 // Helper Component for Profile Fields
 function ProfileField({ label, value }) {
   return (
-    <div className="flex border-b border-gray-200 pb-3">
-      <span className="font-semibold text-gray-700 w-48">{label}:</span>
-      <span className="text-gray-900">{value}</span>
+    <div className="flex border-b border-gray-200 dark:border-gray-700 pb-3">
+      <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">{label}:</span>
+      <span className="text-gray-900 dark:text-white">{value}</span>
     </div>
   );
 }
@@ -470,14 +475,14 @@ function UpdateProfileModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 my-8"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-8 my-8 border border-gray-200 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">Update Profile</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Update Profile</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             type="button"
             disabled={isUpdating}
           >
@@ -488,27 +493,27 @@ function UpdateProfileModal({
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleUpdateProfile} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
           {/* Avatar - Common */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Avatar</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avatar</label>
             <div className="flex items-center gap-4">
               {updateFormData.avatarFile ? (
                 <img
                   src={URL.createObjectURL(updateFormData.avatarFile)}
                   alt="Preview"
-                  className="w-20 h-20 rounded-full object-cover"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
                 />
               ) : (updateFormData.avatar || updateFormData.avatarUrl) ? (
                 <img
                   src={updateFormData.avatar || updateFormData.avatarUrl}
                   alt="Current"
-                  className="w-20 h-20 rounded-full object-cover"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
                 />
               ) : (
                 <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${theme.avatarGradient} flex items-center justify-center text-white text-2xl font-bold`}>
@@ -519,34 +524,34 @@ function UpdateProfileModal({
                 type="file"
                 onChange={handleAvatarChange}
                 accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg"
-                className="text-sm"
+                className="text-sm text-gray-700 dark:text-gray-300"
                 disabled={isUpdating}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, WEBP, BMP, SVG up to 10MB</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">JPG, PNG, GIF, WEBP, BMP, SVG up to 10MB</p>
           </div>
 
           {/* Name - Common */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>
             <input
               type="text"
               required
               value={updateFormData.name || ''}
               onChange={(e) => setUpdateFormData({...updateFormData, name: e.target.value})}
-              className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
+              className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
               disabled={isUpdating}
             />
           </div>
 
           {/* Phone - Common */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
             <input
               type="tel"
               value={updateFormData.phone || ''}
               onChange={(e) => setUpdateFormData({...updateFormData, phone: e.target.value})}
-              className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
+              className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
               placeholder="0901234567"
               disabled={isUpdating}
             />
@@ -558,23 +563,23 @@ function UpdateProfileModal({
               {/* Age and Gender */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Age</label>
                   <input
                     type="number"
                     value={updateFormData.age || ''}
                     onChange={(e) => setUpdateFormData({...updateFormData, age: parseInt(e.target.value)})}
-                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
+                    className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
                     min="18"
                     max="100"
                     disabled={isUpdating}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender</label>
                   <select
                     value={updateFormData.gender || ''}
                     onChange={(e) => setUpdateFormData({...updateFormData, gender: e.target.value})}
-                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
+                    className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
                     disabled={isUpdating}
                   >
                     <option value="">Select gender</option>
@@ -589,46 +594,46 @@ function UpdateProfileModal({
 
           {/* Description - Common */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
             <textarea
               value={updateFormData.description || ''}
               onChange={(e) => setUpdateFormData({...updateFormData, description: e.target.value})}
               rows={userRole === 'TENANT' ? '3' : '4'}
               maxLength="500"
-              className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent resize-none`}
+              className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent resize-none`}
               placeholder={userRole === 'TENANT' ? 'Tell us about yourself...' : 'Tell tenants about your properties...'}
               disabled={isUpdating}
             />
-            <p className="text-xs text-gray-500 mt-1">{(updateFormData.description || '').length}/500</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{(updateFormData.description || '').length}/500</p>
           </div>
 
           {/* Tenant-specific: Roommate Preferences */}
           {userRole === 'TENANT' && (
             <>
-              <div className="border-t pt-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Roommate Preferences</h4>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Roommate Preferences</h4>
               </div>
 
               {/* Budget and Stay Length */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Budget per Month (VND)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Budget per Month (VND)</label>
                   <input
                     type="number"
                     value={updateFormData.budgetPerMonth || ''}
                     onChange={(e) => setUpdateFormData({...updateFormData, budgetPerMonth: parseFloat(e.target.value)})}
-                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
+                    className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
                     min="0"
                     disabled={isUpdating}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Stay Length (months)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stay Length (months)</label>
                   <input
                     type="number"
                     value={updateFormData.stayLength || ''}
                     onChange={(e) => setUpdateFormData({...updateFormData, stayLength: parseInt(e.target.value)})}
-                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
+                    className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
                     min="1"
                     disabled={isUpdating}
                   />
@@ -637,19 +642,19 @@ function UpdateProfileModal({
 
               {/* Move-in Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Move-in Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Move-in Date</label>
                 <input
                   type="date"
                   value={updateFormData.moveInDate || ''}
                   onChange={(e) => setUpdateFormData({...updateFormData, moveInDate: e.target.value})}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
+                  className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 ${theme.ring} focus:border-transparent`}
                   disabled={isUpdating}
                 />
               </div>
 
               {/* Lifestyle */}
               <div className="grid grid-cols-2 gap-4">
-                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600">
                   <input
                     type="checkbox"
                     checked={updateFormData.smoking || false}
@@ -657,9 +662,9 @@ function UpdateProfileModal({
                     className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                     disabled={isUpdating}
                   />
-                  <span className="ml-2 text-gray-700">I smoke</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">I smoke</span>
                 </label>
-                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600">
                   <input
                     type="checkbox"
                     checked={updateFormData.cooking || false}
@@ -667,22 +672,22 @@ function UpdateProfileModal({
                     className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                     disabled={isUpdating}
                   />
-                  <span className="ml-2 text-gray-700">I cook</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">I cook</span>
                 </label>
               </div>
 
               {/* Preferred Districts */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Preferred Districts</label>
-                <div className="max-h-48 overflow-y-auto p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Preferred Districts</label>
+                <div className="max-h-48 overflow-y-auto p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
                   <div className="grid grid-cols-2 gap-2">
                     {districts.map(district => (
                       <label
                         key={district}
                         className={`flex items-center px-3 py-2 border-2 rounded-lg cursor-pointer transition ${
                           updateFormData.preferredLocations?.includes(district)
-                            ? 'border-teal-500 bg-teal-50'
-                            : 'border-gray-200 hover:border-teal-300 bg-white'
+                            ? 'border-teal-500 dark:border-teal-400 bg-teal-50 dark:bg-teal-900/30'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600 bg-white dark:bg-gray-800'
                         } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <input
@@ -692,7 +697,7 @@ function UpdateProfileModal({
                           className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                           disabled={isUpdating}
                         />
-                        <span className="ml-2 text-sm text-gray-700">{district}</span>
+                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{district}</span>
                       </label>
                     ))}
                   </div>
@@ -701,7 +706,7 @@ function UpdateProfileModal({
 
               {/* Room Requirements */}
               <div className="space-y-3">
-                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600">
                   <input
                     type="checkbox"
                     checked={updateFormData.needWindow || false}
@@ -709,9 +714,9 @@ function UpdateProfileModal({
                     className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                     disabled={isUpdating}
                   />
-                  <span className="ml-2 text-gray-700">Need window/balcony</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Need window/balcony</span>
                 </label>
-                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600">
                   <input
                     type="checkbox"
                     checked={updateFormData.mightShareBedRoom || false}
@@ -719,9 +724,9 @@ function UpdateProfileModal({
                     className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                     disabled={isUpdating}
                   />
-                  <span className="ml-2 text-gray-700">Willing to share bedroom</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Willing to share bedroom</span>
                 </label>
-                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600">
                   <input
                     type="checkbox"
                     checked={updateFormData.mightShareToilet || false}
@@ -729,7 +734,7 @@ function UpdateProfileModal({
                     className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                     disabled={isUpdating}
                   />
-                  <span className="ml-2 text-gray-700">Willing to share toilet</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Willing to share toilet</span>
                 </label>
               </div>
             </>
@@ -737,8 +742,8 @@ function UpdateProfileModal({
 
           {/* Landlord-specific info notice */}
           {userRole === 'LANDLORD' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
                 📊 <strong>Property Statistics:</strong> Your property stats are automatically updated based on your room listings.
               </p>
             </div>
@@ -776,14 +781,14 @@ function ChangePasswordModal({ passwordData, setPasswordData, handleChangePasswo
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">Change Password</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Change Password</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             type="button"
             disabled={isUpdating}
           >
@@ -795,37 +800,37 @@ function ChangePasswordModal({ passwordData, setPasswordData, handleChangePasswo
 
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Current Password *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Password *</label>
             <input
               type="password"
               required
               value={passwordData.currentPassword}
               onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               disabled={isUpdating}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password *</label>
             <input
               type="password"
               required
               minLength="8"
               value={passwordData.newPassword}
               onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               disabled={isUpdating}
             />
-            <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must be at least 8 characters</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm New Password *</label>
             <input
               type="password"
               required
               value={passwordData.confirmPassword}
               onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               disabled={isUpdating}
             />
           </div>

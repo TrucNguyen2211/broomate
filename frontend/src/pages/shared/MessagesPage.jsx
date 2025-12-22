@@ -1,13 +1,13 @@
-// FE/src/pages/MessagesPage.jsx
+// FE/src/pages/shared/MessagesPage.jsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Loader } from 'lucide-react';
 import ConversationList from '../../components/messaging/ConversationList';
 import ChatWindow from '../../components/messaging/ChatWindow';
 import messageService from '../../services/messageService';
 import websocketService from '../../services/websocketService';
-import { useMessages } from '../../contexts/MessageContext'; // ✅ Import
+import { useMessages } from '../../contexts/MessageContext';
 
 function MessagesPage() {
   const navigate = useNavigate();
@@ -20,18 +20,13 @@ function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
-  // ✅ Get decrementUnread function
-  const { decrementUnread } = useMessages();
-
-  const { markConversationAsRead } = useMessages();
+  const { markConversationAsRead, unreadConversationIds } = useMessages();
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const currentUserId = user.userId;
 
-  // ✅ Use ref to track selected conversation for WebSocket callback
   const selectedConversationRef = useRef(null);
 
-  // ✅ Update ref whenever selectedConversation changes
   useEffect(() => {
     selectedConversationRef.current = selectedConversation;
   }, [selectedConversation]);
@@ -49,9 +44,14 @@ function MessagesPage() {
         .then(() => {
           console.log('✅ WebSocket connected in MessagesPage');
           
-          // ✅ Register message handler
           unsubscribeMessages = websocketService.onNewMessage((payload) => {
             console.log('💬 📥 Message received in MessagesPage:', payload);
+            
+            // ✅ FIX: Don't add your own messages (already added locally)
+            if (payload.senderId === currentUserId) {
+              console.log('⏭️ Ignoring own message from WebSocket (already added locally)');
+              return;
+            }
             
             const currentConv = selectedConversationRef.current;
             const currentConvId = currentConv?.id || currentConv?.conversationId;
@@ -105,7 +105,6 @@ function MessagesPage() {
             });
           });
 
-          // ✅ Register swipe handler
           unsubscribeSwipes = websocketService.onNewSwipe((payload) => {
             console.log('👍 📥 Swipe received in MessagesPage:', payload);
             
@@ -120,14 +119,11 @@ function MessagesPage() {
         });
     }
     
-    // ✅ Cleanup on unmount
     return () => {
       console.log('🧹 Cleaning up WebSocket subscriptions');
       if (unsubscribeMessages) unsubscribeMessages();
       if (unsubscribeSwipes) unsubscribeSwipes();
     };
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
 
   useEffect(() => {
@@ -170,24 +166,29 @@ function MessagesPage() {
       return;
     }
 
-    // ✅ Check if conversation has unread messages
-    const hasUnread = (conversation.unreadCount || 0) > 0;
-
     setSelectedConversation(conversation);
 
     try {
-      const data = await messageService.getMessages(convId);
-      console.log('✅ Messages loaded:', data);
+      const data = await messageService.getConversationDetail(convId);
+      
+      console.log('=== CONVERSATION DETAIL ===');
+      console.log('Conversation Type:', data.conversationType);
+      console.log('All Participants:', data.allParticipants);
+      console.log('Messages:', data.messages);
+      
+      setSelectedConversation({
+        ...conversation,
+        ...data,
+      });
+      
       setMessages(data.messages || []);
       
-      await messageService.markAsRead(convId);
+      // ✅ ALWAYS mark as read (remove the if condition)
+      console.log('📖 MessagesPage - Marking conversation as read:', convId);
+      markConversationAsRead(convId);
+      console.log('✅ Marked conversation as read');
       
-      // ✅ Mark conversation as read in global context
-      if (hasUnread) {
-        markConversationAsRead(convId);
-      }
-      
-      // Reset local unread count
+      // Update local conversation list
       setConversations(prev => prev.map(conv => {
         const cId = conv.id || conv.conversationId;
         if (cId === convId) {
@@ -231,7 +232,6 @@ function MessagesPage() {
       console.log('✅ Message sent:', newMessage);
       setMessages(prev => [...prev, newMessage]);
       
-      // Update conversation list
       setConversations(prev => prev.map(conv => {
         const cId = conv.id || conv.conversationId;
         if (cId === convId) {
@@ -252,31 +252,42 @@ function MessagesPage() {
     }
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.otherParticipantName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // ✅ OPTIMIZED: useMemo for filtered conversations
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery) return conversations;
+    
+    const searchLower = searchQuery.toLowerCase();
+    return conversations.filter(conv => {
+      if (conv.conversationType === 'THREE_WAY' && conv.allParticipants) {
+        return conv.allParticipants.some(p => 
+          p.name.toLowerCase().includes(searchLower)
+        );
+      }
+      return conv.otherParticipantName?.toLowerCase().includes(searchLower);
+    });
+  }, [conversations, searchQuery]);
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <Loader className="w-12 h-12 text-teal-600 animate-spin" />
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <Loader className="w-12 h-12 text-teal-600 dark:text-teal-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex bg-gray-50">
+    <div className="h-full flex bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Conversation List Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b">
+      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0 h-full">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-semibold">Back</span>
           </button>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Messages</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Messages</h2>
         </div>
 
         <ConversationList
@@ -285,19 +296,23 @@ function MessagesPage() {
           onSelectConversation={handleSelectConversation}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          currentUserId={currentUserId} // ✅ PASS currentUserId
+          unreadConversationIds={unreadConversationIds}
           compact={false}
         />
       </div>
 
       {/* Chat Window */}
-      <ChatWindow
-        conversation={selectedConversation}
-        messages={messages}
-        currentUserId={currentUserId}
-        onSendMessage={handleSendMessage}
-        isSending={isSending}
-        compact={false}
-      />
+      <div className="flex-1 h-full overflow-hidden">
+        <ChatWindow
+          conversation={selectedConversation}
+          messages={messages}
+          currentUserId={currentUserId}
+          onSendMessage={handleSendMessage}
+          isSending={isSending}
+          compact={false}
+        />
+      </div>
     </div>
   );
 }

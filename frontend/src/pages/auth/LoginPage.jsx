@@ -1,3 +1,5 @@
+// FE/src/pages/auth/LoginPage.jsx
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
@@ -10,11 +12,37 @@ function LoginPage() {
     rememberMe: false
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email must be valid';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    setErrors({});
     setIsLoading(true);
 
     try {
@@ -41,7 +69,8 @@ function LoginPage() {
 
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'An error occurred during login. Please try again.');
+      const errorMessage = err.response?.data?.message || 'An error occurred during login. Please try again.';
+      setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -62,9 +91,9 @@ function LoginPage() {
         {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Error Message */}
-          {error && (
+          {errors.submit && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600">{errors.submit}</p>
             </div>
           )}
 
@@ -77,13 +106,20 @@ function LoginPage() {
               <input
                 id="email"
                 type="email"
-                required
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                onChange={(e) => {
+                  setFormData({...formData, email: e.target.value});
+                  setErrors({...errors, email: ''});
+                }}
+                className={`w-full px-4 py-3 border ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                } bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition`}
                 placeholder="your.email@example.com"
                 disabled={isLoading}
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
             </div>
 
             {/* Password Field */}
@@ -94,13 +130,20 @@ function LoginPage() {
               <input
                 id="password"
                 type="password"
-                required
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                onChange={(e) => {
+                  setFormData({...formData, password: e.target.value});
+                  setErrors({...errors, password: ''});
+                }}
+                className={`w-full px-4 py-3 border ${
+                  errors.password ? 'border-red-500' : 'border-gray-300'
+                } bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition`}
                 placeholder="Enter your password"
                 disabled={isLoading}
               />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
             </div>
 
             {/* Remember Me & Forgot Password */}

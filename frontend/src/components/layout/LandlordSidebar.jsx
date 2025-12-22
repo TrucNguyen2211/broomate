@@ -1,17 +1,13 @@
-import React, { useState } from 'react';
+// FE/src/components/navigation/LandlordSidebar.jsx
+
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ ADD THIS
 
 function LandlordSidebar({ isCollapsed, onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [theme, setTheme] = useState('light');
-
-  const handleThemeToggle = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    // TODO: Implement actual theme switching logic
-    console.log('Theme switched to:', newTheme);
-  };
+  const { theme, toggleTheme, isDark } = useTheme(); // ✅ ADD THIS
 
   const isActive = (path) => location.pathname === path;
 
@@ -44,22 +40,23 @@ function LandlordSidebar({ isCollapsed, onToggle }) {
 
   return (
     <div 
-      className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
+      className={`border-r flex flex-col transition-all duration-300 ${
         isCollapsed ? 'w-20' : 'w-64'
-      } h-full`}
+      } h-full
+      bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700`} // ✅ UPDATED
     >
       {/* Collapse Toggle Button */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="p-4 border-b flex items-center justify-between border-gray-200 dark:border-gray-700"> {/* ✅ UPDATED */}
         {!isCollapsed && (
-          <h2 className="text-lg font-bold text-gray-900">Landlord Menu</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Landlord Menu</h2>
         )}
         <button
           onClick={onToggle}
-          className="p-2 hover:bg-gray-100 rounded-lg transition"
+          className="p-2 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-800" // ✅ UPDATED
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg 
-            className={`w-5 h-5 text-gray-600 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} 
+            className={`w-5 h-5 transition-transform text-gray-600 dark:text-gray-300 ${isCollapsed ? 'rotate-180' : ''}`} // ✅ UPDATED
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
@@ -78,7 +75,7 @@ function LandlordSidebar({ isCollapsed, onToggle }) {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
               isActive(item.path)
                 ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md'
-                : 'text-gray-700 hover:bg-gray-100'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' // ✅ UPDATED
             }`}
             title={isCollapsed ? item.label : ''}
           >
@@ -86,7 +83,7 @@ function LandlordSidebar({ isCollapsed, onToggle }) {
             {!isCollapsed && (
               <div className="flex flex-col items-start">
                 <span className="font-medium">{item.label}</span>
-                <span className={`text-xs ${isActive(item.path) ? 'text-pink-100' : 'text-gray-500'}`}>
+                <span className={`text-xs ${isActive(item.path) ? 'text-pink-100' : 'text-gray-500 dark:text-gray-400'}`}> {/* ✅ UPDATED */}
                   {item.description}
                 </span>
               </div>
@@ -96,14 +93,14 @@ function LandlordSidebar({ isCollapsed, onToggle }) {
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-4 border-t border-gray-200 space-y-2">
+      <div className="p-4 border-t space-y-2 border-gray-200 dark:border-gray-700"> {/* ✅ UPDATED */}
         {/* Account */}
         <button
           onClick={() => navigate('/dashboard/landlord/account')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-            isActive('account')
-              ? 'bg-teal-100 text-teal-700'
-              : 'text-gray-700 hover:bg-gray-100'
+            isActive('/dashboard/landlord/account')
+              ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300' // ✅ UPDATED
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' // ✅ UPDATED
           }`}
           title={isCollapsed ? 'Account' : ''}
         >
@@ -113,11 +110,11 @@ function LandlordSidebar({ isCollapsed, onToggle }) {
 
         {/* Theme Toggle */}
         <button
-          onClick={handleThemeToggle}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+          onClick={toggleTheme} // ✅ UPDATED
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" // ✅ UPDATED
           title={isCollapsed ? 'Toggle theme' : ''}
         >
-          <span className="text-xl">{theme === 'light' ? '🌙' : '☀️'}</span>
+          <span className="text-xl">{isDark ? '☀️' : '🌙'}</span> {/* ✅ UPDATED */}
           {!isCollapsed && <span className="font-medium">Theme: {theme}</span>}
         </button>
 
@@ -130,7 +127,7 @@ function LandlordSidebar({ isCollapsed, onToggle }) {
               navigate('/login');
             }
           }}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" // ✅ UPDATED
           title={isCollapsed ? 'Logout' : ''}
         >
           <span className="text-xl">🚪</span>

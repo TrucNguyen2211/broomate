@@ -1,3 +1,5 @@
+// FE/src/pages/tenant/TenantDashboard.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader } from 'lucide-react';
@@ -8,23 +10,20 @@ function TenantDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     bookmarks: 0,
-    matches: 0, // Kept for UI display, but not fetched from API
+    matches: 0,
     messages: 0
   });
   const [isLoading, setIsLoading] = useState(true);
   const [recentActivity, setRecentActivity] = useState([]);
 
-  // Fetch all stats on component mount
   useEffect(() => {
     fetchDashboardStats();
   }, []);
 
-  // ✅ Listen for activity updates from other pages
   useEffect(() => {
     const handleActivityUpdate = (event) => {
       const { type, data } = event.detail;
       
-      // Add new activity to the top of the list
       const newActivity = {
         id: `${type}-${Date.now()}`,
         type: type,
@@ -34,9 +33,8 @@ function TenantDashboard() {
         time: new Date().toISOString()
       };
 
-      setRecentActivity(prev => [newActivity, ...prev].slice(0, 5)); // Keep only 5 most recent
+      setRecentActivity(prev => [newActivity, ...prev].slice(0, 5));
 
-      // Update stats
       if (type === 'bookmark') {
         setStats(prev => ({ ...prev, bookmarks: prev.bookmarks + 1 }));
       } else if (type === 'unbookmark') {
@@ -53,7 +51,6 @@ function TenantDashboard() {
     };
   }, []);
 
-  // ✅ Helper functions for activity display
   const getActivityIcon = (type) => {
     switch (type) {
       case 'bookmark': return '💾';
@@ -99,13 +96,11 @@ function TenantDashboard() {
         return;
       }
 
-      // ✅ Fetch only bookmarks and conversations (matches removed per team decision)
       const [bookmarksData, conversationsData] = await Promise.allSettled([
         tenantService.getBookmarks(),
         messageService.getAllConversations()
       ]);
 
-      // Process bookmarks
       let bookmarksCount = 0;
       if (bookmarksData.status === 'fulfilled') {
         bookmarksCount = Array.isArray(bookmarksData.value) ? bookmarksData.value.length : 0;
@@ -113,7 +108,6 @@ function TenantDashboard() {
         console.warn('Could not fetch bookmarks:', bookmarksData.reason);
       }
 
-      // Process conversations
       let messagesCount = 0;
       let conversations = [];
       if (conversationsData.status === 'fulfilled') {
@@ -125,22 +119,18 @@ function TenantDashboard() {
 
       setStats({
         bookmarks: bookmarksCount,
-        matches: 0, // Matches feature not implemented per team agreement
+        matches: 0,
         messages: messagesCount
       });
 
-      // ✅ Build recent activity from conversations (showing most recent)
-      // Get current user ID to determine who sent the last message
       const currentUserId = JSON.parse(localStorage.getItem('user') || '{}').userId;
       
       const recentActivities = conversations.slice(0, 3).map(conv => {
-        // ✅ Check if backend provides lastMessageSenderId
         let lastMessageFromMe = false;
         let title = 'New message';
         let description = `${conv.otherParticipantName}: ${conv.lastMessage || 'Sent you a message'}`;
         
         if (conv.lastMessageSenderId) {
-          // Backend provides the sender ID - use it!
           lastMessageFromMe = conv.lastMessageSenderId === currentUserId;
           
           if (lastMessageFromMe) {
@@ -151,9 +141,6 @@ function TenantDashboard() {
             description = `${conv.otherParticipantName}: ${conv.lastMessage || 'Sent you a message'}`;
           }
         } else {
-          // ⚠️ Backend doesn't provide lastMessageSenderId
-          // Without this field, we can't reliably determine who sent the last message
-          // Show generic activity without assuming sender
           title = 'Message activity';
           description = conv.lastMessage || `Conversation with ${conv.otherParticipantName}`;
         }
@@ -177,7 +164,6 @@ function TenantDashboard() {
     }
   };
 
-  // Navigation handlers
   const handleFindRooms = () => {
     navigate('/dashboard/tenant/find-rooms');
   };
@@ -194,7 +180,6 @@ function TenantDashboard() {
     navigate('/dashboard/messages');
   };
 
-  // Format time ago
   const formatTimeAgo = (timestamp) => {
     if (!timestamp) return '';
     
@@ -216,54 +201,54 @@ function TenantDashboard() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800"> {/* ✅ UPDATED */}
         <div className="text-center">
-          <Loader className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading your dashboard...</p>
+          <Loader className="w-12 h-12 text-teal-600 dark:text-teal-400 animate-spin mx-auto mb-4" /> {/* ✅ UPDATED */}
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Loading your dashboard...</p> {/* ✅ UPDATED */}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto p-8 bg-gradient-to-br from-teal-50 to-white">
+    <div className="h-full overflow-y-auto p-8 bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800"> {/* ✅ UPDATED */}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, Tenant!</h1>
-          <p className="text-gray-600">Find your perfect room and ideal roommate</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome, Tenant!</h1> {/* ✅ UPDATED */}
+          <p className="text-gray-600 dark:text-gray-400">Find your perfect room and ideal roommate</p> {/* ✅ UPDATED */}
         </div>
 
-        {/* Quick Stats - Matches removed */}
+        {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <button
             onClick={handleViewBookmarks}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-teal-100 hover:shadow-xl transition transform hover:scale-105 text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-teal-100 dark:border-teal-900 hover:shadow-xl transition transform hover:scale-105 text-left" // ✅ UPDATED
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Bookmarks</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bookmarks</h3> {/* ✅ UPDATED */}
               <span className="text-3xl">💾</span>
             </div>
-            <p className="text-3xl font-bold text-teal-600">{stats.bookmarks}</p>
-            <p className="text-sm text-gray-500 mt-2">Saved rooms</p>
+            <p className="text-3xl font-bold text-teal-600 dark:text-teal-400">{stats.bookmarks}</p> {/* ✅ UPDATED */}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Saved rooms</p> {/* ✅ UPDATED */}
           </button>
 
           <button
             onClick={handleViewMessages}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100 hover:shadow-xl transition transform hover:scale-105 text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-purple-100 dark:border-purple-900 hover:shadow-xl transition transform hover:scale-105 text-left" // ✅ UPDATED
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Messages</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Messages</h3> {/* ✅ UPDATED */}
               <span className="text-3xl">💬</span>
             </div>
-            <p className="text-3xl font-bold text-purple-600">{stats.messages}</p>
-            <p className="text-sm text-gray-500 mt-2">Conversations</p>
+            <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.messages}</p> {/* ✅ UPDATED */}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Conversations</p> {/* ✅ UPDATED */}
           </button>
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl p-8 shadow-lg mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg mb-8"> {/* ✅ UPDATED */}
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h2> {/* ✅ UPDATED */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <button
               onClick={handleFindRooms}
@@ -290,14 +275,14 @@ function TenantDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-8 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg"> {/* ✅ UPDATED */}
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Recent Activity</h2> {/* ✅ UPDATED */}
           
           {recentActivity.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-3">🎯</div>
-              <p className="text-gray-600 mb-4">No recent activity yet</p>
-              <p className="text-sm text-gray-500">Start exploring rooms and matching with roommates!</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">No recent activity yet</p> {/* ✅ UPDATED */}
+              <p className="text-sm text-gray-500 dark:text-gray-500">Start exploring rooms and matching with roommates!</p> {/* ✅ UPDATED */}
             </div>
           ) : (
             <div className="space-y-4">
@@ -313,15 +298,15 @@ function TenantDashboard() {
                       navigate('/dashboard/tenant/find-roommates');
                     }
                   }}
-                  className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left"
+                  className="w-full flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition text-left" // ✅ UPDATED
                 >
                   <span className="text-2xl">{activity.icon}</span>
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900">{activity.title}</p>
-                    <p className="text-sm text-gray-600">{activity.description}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{activity.title}</p> {/* ✅ UPDATED */}
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{activity.description}</p> {/* ✅ UPDATED */}
                   </div>
                   {activity.time && (
-                    <span className="text-xs text-gray-500">{formatTimeAgo(activity.time)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-500">{formatTimeAgo(activity.time)}</span>
                   )}
                 </button>
               ))}
@@ -329,22 +314,22 @@ function TenantDashboard() {
           )}
         </div>
 
-        {/* Stats Summary Footer - Updated to only show 2 stats */}
+        {/* Stats Summary Footer */}
         {(stats.bookmarks > 0 || stats.messages > 0) && (
-          <div className="mt-6 bg-gradient-to-r from-teal-50 to-purple-50 rounded-xl p-6 border border-teal-100">
+          <div className="mt-6 bg-gradient-to-r from-teal-50 to-purple-50 dark:from-teal-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-teal-100 dark:border-teal-800"> {/* ✅ UPDATED */}
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-700">Your Activity Summary</p>
-                <p className="text-xs text-gray-600 mt-1">Keep exploring to find your perfect match!</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Your Activity Summary</p> {/* ✅ UPDATED */}
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Keep exploring to find your perfect match!</p> {/* ✅ UPDATED */}
               </div>
               <div className="flex gap-6 text-sm">
                 <div className="text-center">
-                  <p className="font-bold text-teal-600 text-lg">{stats.bookmarks}</p>
-                  <p className="text-gray-600 text-xs">Bookmarks</p>
+                  <p className="font-bold text-teal-600 dark:text-teal-400 text-lg">{stats.bookmarks}</p> {/* ✅ UPDATED */}
+                  <p className="text-gray-600 dark:text-gray-400 text-xs">Bookmarks</p> {/* ✅ UPDATED */}
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-purple-600 text-lg">{stats.messages}</p>
-                  <p className="text-gray-600 text-xs">Messages</p>
+                  <p className="font-bold text-purple-600 dark:text-purple-400 text-lg">{stats.messages}</p> {/* ✅ UPDATED */}
+                  <p className="text-gray-600 dark:text-gray-400 text-xs">Messages</p> {/* ✅ UPDATED */}
                 </div>
               </div>
             </div>

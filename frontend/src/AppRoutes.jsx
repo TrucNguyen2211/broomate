@@ -1,3 +1,5 @@
+// FE/src/AppRoutes.jsx
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
@@ -9,17 +11,15 @@ import UploadRoomPage from './pages/landlord/UploadRoomPage';
 import MessagePage from './pages/shared/MessagesPage';
 import AccountPage from './pages/shared/AccountPage';
 import RoomDetailPage from './pages/shared/RoomDetailPage';
-import FindRoomsPage from './pages/shared/FindRoomsPage'; // ✅ NOW SHARED
+import FindRoomsPage from './pages/shared/FindRoomsPage';
 import MatchPage from './pages/tenant/MatchPage';
 import FindRoommatesPage from './pages/tenant/FindRoommatesPage';
 import BookmarksPage from './pages/tenant/BookmarksPage';
 import MyRoomsPage from './pages/landlord/MyRoomsPage';
-import { MessageProvider } from './contexts/MessageContext'; // ✅ Import
 
 function AppRoutes() {
   return (
-    <MessageProvider>
-    <Routes>
+    <Routes> {/* ✅ REMOVED MessageProvider - already in App.js */}
       {/* Auth routes - NO LAYOUT */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
@@ -31,7 +31,7 @@ function AppRoutes() {
         
         {/* ===== TENANT ROUTES ===== */}
         <Route path="tenant" element={<TenantDashboard />} />
-        <Route path="tenant/find-rooms" element={<FindRoomsPage />} /> {/* ✅ SHARED */}
+        <Route path="tenant/find-rooms" element={<FindRoomsPage />} />
         <Route path="tenant/find-roommates" element={<FindRoommatesPage />} />
         <Route path="tenant/bookmarks" element={<BookmarksPage />} />
         <Route path="tenant/match" element={<MatchPage />} />
@@ -42,7 +42,7 @@ function AppRoutes() {
         <Route path="landlord" element={<LandlordDashboard />} />
         <Route path="landlord/upload-room" element={<UploadRoomPage />} />
         <Route path="landlord/my-rooms" element={<MyRoomsPage />} />
-        <Route path="landlord/browse-rooms" element={<FindRoomsPage />} /> {/* ✅ SHARED */}
+        <Route path="landlord/browse-rooms" element={<FindRoomsPage />} />
         <Route path="landlord/room/:roomId" element={<RoomDetailPage />} />
         <Route path="landlord/edit-room/:roomId" element={<UploadRoomPage />} />
         <Route path="landlord/account" element={<AccountPage />} />
@@ -59,7 +59,6 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
-    </MessageProvider>
   );
 }
 

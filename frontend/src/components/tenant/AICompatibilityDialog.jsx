@@ -20,7 +20,6 @@ function AICompatibilityDialog({
   };
 
   const handleSubmit = () => {
-    // Validate all questions are answered
     const allAnswered = questions.every((_, index) => answers[index]?.trim());
 
     if (!allAnswered) {
@@ -28,7 +27,6 @@ function AICompatibilityDialog({
       return;
     }
 
-    // Convert to array format
     const answersArray = questions.map((_, index) => answers[index]);
     onSubmitAnswers(answersArray);
   };
@@ -42,13 +40,13 @@ function AICompatibilityDialog({
 
       {/* Dialog */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700">
           {/* Header */}
-          <div className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-4 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700 text-white px-6 py-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">🤖 AI Compatibility Check</h2>
             <button
               onClick={onClose}
-              className="hover:bg-white/20 p-1 rounded-full transition"
+              className="hover:bg-white/20 dark:hover:bg-white/30 p-1 rounded-full transition"
             >
               <X className="w-6 h-6" />
             </button>
@@ -56,24 +54,24 @@ function AICompatibilityDialog({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Answer these questions to determine your compatibility with this potential
               roommate.
             </p>
 
             <div className="space-y-4">
               {questions.map((question, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
+                <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                  <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                     Question {index + 1}:
                   </label>
-                  <p className="text-gray-700 mb-3">{question}</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-3">{question}</p>
                   <textarea
                     value={answers[index] || ''}
                     onChange={(e) => handleAnswerChange(index, e.target.value)}
                     placeholder="Your answer..."
                     rows={3}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                   />
                 </div>
               ))}
@@ -81,10 +79,10 @@ function AICompatibilityDialog({
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 px-6 py-4 flex gap-3">
+          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition"
               disabled={isLoading}
             >
               Cancel
@@ -92,7 +90,7 @@ function AICompatibilityDialog({
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:bg-gray-400"
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:bg-gray-400 dark:disabled:bg-gray-600"
             >
               {isLoading ? 'Analyzing...' : 'Submit Answers'}
             </button>

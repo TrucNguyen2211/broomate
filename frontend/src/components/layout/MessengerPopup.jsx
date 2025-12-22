@@ -9,14 +9,19 @@ import websocketService from '../../services/websocketService';
 import { useMessages } from '../../contexts/MessageContext';
 
 function MessengerPopup({ isOpen, onClose }) {
-  const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  const { markConversationAsRead } = useMessages();
+  // ✅ GET FROM CONTEXT
+  const { 
+    allConversations,
+    unreadConversationIds, 
+    markConversationAsRead,
+    fetchConversations 
+  } = useMessages();
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const currentUserId = user.userId;
@@ -34,6 +39,7 @@ function MessengerPopup({ isOpen, onClose }) {
     const token = localStorage.getItem('token');
     let unsubscribeMessages = null;
     let unsubscribeSwipes = null;
+    let unsubscribeConversations = null;
 
     console.log('🔌 MessengerPopup: Connecting WebSocket');
 
@@ -43,6 +49,11 @@ function MessengerPopup({ isOpen, onClose }) {
 
         unsubscribeMessages = websocketService.onNewMessage((payload) => {
           console.log('💬 Popup received new message:', payload);
+
+          if (payload.senderId === currentUserId) {
+            console.log('⏭️ Ignoring own message from WebSocket');
+            return;
+          }
 
           const currentConv = selectedConversationRef.current;
           const currentConvId = currentConv?.id || currentConv?.conversationId;
@@ -59,36 +70,14 @@ function MessengerPopup({ isOpen, onClose }) {
                 id: payload.messageId,
                 conversationId: payload.conversationId,
                 senderId: payload.senderId,
+                senderName: payload.senderName,
+                senderAvatar: payload.senderAvatar,
                 content: payload.content,
                 mediaUrls: payload.mediaUrls || [],
                 createdAt: payload.timestamp || new Date().toISOString(),
               }];
             });
           }
-
-          // ✅ Update conversation list in real-time
-          setConversations(prev => {
-            const updated = prev.map(conv => {
-              const convId = conv.id || conv.conversationId;
-              if (convId === payload.conversationId) {
-                return {
-                  ...conv,
-                  lastMessage: payload.content,
-                  lastMessageAt: payload.timestamp,
-                  unreadCount: convId === currentConvId 
-                    ? 0 
-                    : (conv.unreadCount || 0) + 1
-                };
-              }
-              return conv;
-            });
-
-            return updated.sort((a, b) => {
-              const timeA = new Date(a.lastMessageAt || 0);
-              const timeB = new Date(b.lastMessageAt || 0);
-              return timeB - timeA;
-            });
-          });
         });
 
         unsubscribeSwipes = websocketService.onNewSwipe((payload) => {
@@ -96,8 +85,18 @@ function MessengerPopup({ isOpen, onClose }) {
           
           if (payload.isMatch) {
             alert(`🎉 It's a match with ${payload.swiperName}!`);
-            fetchConversations();
           }
+        });
+
+        unsubscribeConversations = websocketService.onConversationNotification((payload) => {
+          console.log('👥 Popup received 3-way conversation notification:', payload);
+          
+          const participantNames = payload.participants
+            .filter(p => p.userId !== currentUserId)
+            .map(p => p.name)
+            .join(' and ');
+          
+          alert(`👥 Group chat created for "${payload.roomTitle}" with ${participantNames}!`);
         });
       })
       .catch(error => {
@@ -108,53 +107,35 @@ function MessengerPopup({ isOpen, onClose }) {
       console.log('🧹 MessengerPopup: Cleaning up WebSocket subscriptions');
       if (unsubscribeMessages) unsubscribeMessages();
       if (unsubscribeSwipes) unsubscribeSwipes();
+      if (unsubscribeConversations) unsubscribeConversations();
     };
   }, [isOpen, currentUserId]);
 
-  // ✅ CRITICAL FIX: Fetch conversations EVERY TIME popup opens
+  // ✅ Refresh when popup opens
   useEffect(() => {
     if (isOpen) {
-      console.log('🔄 MessengerPopup opened - fetching fresh conversations');
+      console.log('🔄 MessengerPopup opened - refreshing conversations');
       fetchConversations();
     } else {
-      // ✅ Reset state when popup closes
       console.log('🧹 MessengerPopup closed - resetting state');
       setSelectedConversation(null);
       setMessages([]);
       setSearchQuery('');
     }
-  }, [isOpen]);
+  }, [isOpen, fetchConversations]);
 
-  const fetchConversations = async () => {
-    try {
-      console.log('📥 MessengerPopup - Fetching conversations...');
-      const data = await messageService.getAllConversations();
-      console.log('💬 MessengerPopup - Fetched conversations:', data.conversations?.length);
-      
-      if (data.conversations?.length > 0) {
-        console.log('🔍 First conversation structure:', data.conversations[0]);
-        console.log('📊 Unread counts:', data.conversations.map(c => ({
-          name: c.otherParticipantName,
-          unreadCount: c.unreadCount
-        })));
-      }
-      
-      setConversations(data.conversations || []);
-    } catch (error) {
-      console.error('❌ Error fetching conversations:', error);
-    }
-  };
-
+  // ✅ CRITICAL: Handle conversation selection
   const handleSelectConversation = async (conversation) => {
     console.log('🎯 MessengerPopup - Selected conversation:', conversation);
     
     const convId = conversation?.conversationId || conversation?.id;
-    const hasUnread = (conversation.unreadCount || 0) > 0;
+    
+    console.log('🔍 Conversation ID:', convId);
+    console.log('🔍 markConversationAsRead function exists?', typeof markConversationAsRead);
     
     if (!convId) {
       console.error('❌ No conversation ID found:', conversation);
       alert('Cannot open conversation: Missing ID');
-      setIsLoading(false);
       return;
     }
 
@@ -167,26 +148,16 @@ function MessengerPopup({ isOpen, onClose }) {
       console.log('✅ MessengerPopup - Messages loaded:', data.messages?.length);
       setMessages(data.messages || []);
       
-      try {
-        await messageService.markAsRead(convId);
-        
-        // ✅ Mark conversation as read in global context
-        if (hasUnread) {
-          console.log('📉 Marking conversation as read:', convId);
-          markConversationAsRead(convId);
-        }
-        
-        // ✅ Update local state
-        setConversations(prev => prev.map(conv => {
-          const cId = conv.id || conv.conversationId;
-          if (cId === convId) {
-            return { ...conv, unreadCount: 0 };
-          }
-          return conv;
-        }));
-      } catch (readError) {
-        console.warn('⚠️ Could not mark as read:', readError);
+      // ✅ CRITICAL: Mark as read
+      console.log('📖 About to call markConversationAsRead()');
+      
+      if (typeof markConversationAsRead === 'function') {
+        markConversationAsRead(convId);
+        console.log('✅ Called markConversationAsRead()');
+      } else {
+        console.error('❌ markConversationAsRead is not a function!', markConversationAsRead);
       }
+      
     } catch (error) {
       console.error('❌ MessengerPopup - Error fetching messages:', error);
       setMessages([]);
@@ -224,17 +195,7 @@ function MessengerPopup({ isOpen, onClose }) {
       console.log('✅ Message sent successfully:', newMessage);
       setMessages(prev => [...prev, newMessage]);
       
-      setConversations(prev => prev.map(conv => {
-        const cId = conv.id || conv.conversationId;
-        if (cId === convId) {
-          return {
-            ...conv,
-            lastMessage: content || '📎 Attachment',
-            lastMessageAt: newMessage.createdAt
-          };
-        }
-        return conv;
-      }));
+      fetchConversations();
     } catch (error) {
       console.error('❌ Error sending message:', error);
       alert('Failed to send message. Please try again.');
@@ -248,34 +209,39 @@ function MessengerPopup({ isOpen, onClose }) {
     setMessages([]);
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.otherParticipantName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // ✅ Filter conversations
+  const filteredConversations = allConversations.filter(conv => {
+    if (conv.conversationType === 'THREE_WAY') {
+      const participantNames = conv.allParticipants
+        ?.map(p => p.name)
+        .join(' ')
+        .toLowerCase() || '';
+      return participantNames.includes(searchQuery.toLowerCase());
+    } else {
+      return conv.otherParticipantName?.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+  });
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-20 z-40"
         onClick={onClose}
       />
 
-      {/* Messenger Popup */}
-      <div className="fixed bottom-0 right-6 w-96 h-[600px] bg-white rounded-t-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-4 py-3 rounded-t-2xl flex items-center justify-between flex-shrink-0">
+      <div className="fixed bottom-0 right-6 w-96 h-[600px] bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-700 text-white px-4 py-3 rounded-t-2xl flex items-center justify-between flex-shrink-0">
           <h3 className="font-semibold text-lg">Messages</h3>
           <button 
             onClick={onClose}
-            className="hover:bg-white/20 p-1 rounded-full transition"
+            className="hover:bg-white/20 dark:hover:bg-white/30 p-1 rounded-full transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-hidden">
           {!selectedConversation ? (
             <ConversationList
@@ -284,6 +250,8 @@ function MessengerPopup({ isOpen, onClose }) {
               onSelectConversation={handleSelectConversation}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
+              currentUserId={currentUserId}
+              unreadConversationIds={unreadConversationIds}
               compact={true}
             />
           ) : (

@@ -7,6 +7,7 @@ import org.example.Broomate.dto.request.tenant.SwipeRequest;
 import org.example.Broomate.dto.request.tenant.UpdateTenantProfileRequest;
 import org.example.Broomate.dto.response.allAuthUser.ConversationDetailResponse;
 import org.example.Broomate.dto.response.tenant.*;
+import org.example.Broomate.dto.websocket.NewSwipeNotification;  // ✅ ADDED IMPORT
 import org.example.Broomate.dto.websocket.ThreeWayConversationNotification;
 import org.example.Broomate.model.*;
 import org.example.Broomate.repository.AllAuthUserRepository;
@@ -119,8 +120,8 @@ public class TenantService {
     }
 
     // ========================================
-// UPDATE TENANT PROFILE (WITH AVATAR)
-// ========================================
+    // UPDATE TENANT PROFILE (WITH AVATAR)
+    // ========================================
     /**
      * Update tenant profile with avatar
      */
@@ -204,8 +205,6 @@ public class TenantService {
         }
     }
 
-
-
     // ========================================
     // SWIPE LOGIC
     // ========================================
@@ -264,11 +263,26 @@ public class TenantService {
             );
         }
 
-        // 6. Handle ACCEPT action - check for mutual match
+        // ✅ 6. SEND NOTIFICATION: User A swiped right on User B
+        Tenant swiperTenant = tenantRepository.findById(swiperTenantId).orElse(null);
+        if (swiperTenant != null) {
+            NewSwipeNotification swipeNotification = NewSwipeNotification.builder()
+                    .swipeId(swipe.getId())
+                    .swiperId(swiperTenantId)
+                    .swiperName(swiperTenant.getName())
+                    .swiperAvatar(swiperTenant.getAvatarUrl())
+                    .isMatch(false) // Not a match yet
+                    .build();
+            
+            webSocketService.sendNewSwipeNotification(request.getTargetTenantId(), swipeNotification);
+            log.info("✅ Sent swipe notification from {} to {}", swiperTenantId, request.getTargetTenantId());
+        }
+
+        // 7. Handle ACCEPT action - check for mutual match
         Optional<Swipe> mutualSwipe = tenantRepository.findSwipe(
                 request.getTargetTenantId(), swiperTenantId);
 
-        // 7. No mutual match yet
+        // 8. No mutual match yet
         if (mutualSwipe.isEmpty() || !Swipe.SwipeActionEnum.ACCEPT.equals(mutualSwipe.get().getAction())) {
             return SwipeResponse.fromSwipe(
                     swipe,
@@ -278,7 +292,7 @@ public class TenantService {
             );
         }
 
-        // 8. MUTUAL MATCH FOUND! Create match and conversation
+        // 9. MUTUAL MATCH FOUND! Create match and conversation
         log.info("Match found between {} and {}", swiperTenantId, request.getTargetTenantId());
 
         return createMatchAndConversation(swiperTenantId, targetTenant, swipe);
@@ -315,6 +329,37 @@ public class TenantService {
 
         tenantRepository.saveMatch(match);
 
+        // ✅ GET CURRENT TENANT INFO FOR NOTIFICATIONS
+        Tenant currentTenant = tenantRepository.findById(currentTenantId).orElse(null);
+
+        // ✅ SEND MATCH NOTIFICATION TO CURRENT TENANT
+        if (currentTenant != null) {
+            NewSwipeNotification matchNotification1 = NewSwipeNotification.builder()
+                    .swipeId(swipe.getId())
+                    .swiperId(targetTenant.getId())
+                    .swiperName(targetTenant.getName())
+                    .swiperAvatar(targetTenant.getAvatarUrl())
+                    .isMatch(true)
+                    .conversationId(conversationId)
+                    .build();
+            
+            webSocketService.sendNewSwipeNotification(currentTenantId, matchNotification1);
+            log.info("✅ Sent match notification to current tenant: {}", currentTenantId);
+        }
+
+        // ✅ SEND MATCH NOTIFICATION TO TARGET TENANT
+        NewSwipeNotification matchNotification2 = NewSwipeNotification.builder()
+                .swipeId(swipe.getId())
+                .swiperId(currentTenantId)
+                .swiperName(currentTenant != null ? currentTenant.getName() : "Unknown")
+                .swiperAvatar(currentTenant != null ? currentTenant.getAvatarUrl() : null)
+                .isMatch(true)
+                .conversationId(conversationId)
+                .build();
+
+        webSocketService.sendNewSwipeNotification(targetTenant.getId(), matchNotification2);
+        log.info("✅ Sent match notification to target tenant: {}", targetTenant.getId());
+
         // Build match DTO for response
         MatchResponse matchResponse = MatchResponse.builder()
                 .matchId(matchId)
@@ -334,12 +379,10 @@ public class TenantService {
                 "It's a match! You can now start chatting with " + targetTenant.getName() + "."
         );
     }
+
     // ========================================
-// BOOKMARK ROOM
-// ========================================
+    // BOOKMARK ROOM (WITH 3-WAY CONVERSATION LOGIC)
     // ========================================
-// BOOKMARK ROOM (WITH 3-WAY CONVERSATION LOGIC)
-// ========================================
     public BookmarkResponse bookmarkRoom(String tenantId, String roomId) {
         log.info("Bookmarking room {} for tenant {}", roomId, tenantId);
 
@@ -424,9 +467,10 @@ public class TenantService {
         // No 3-way conversation created
         return BookmarkResponse.fromBookmark(savedBookmark);
     }
+
     // ========================================
-// PRIVATE HELPER: CREATE 3-WAY CONVERSATION
-// ========================================
+    // PRIVATE HELPER: CREATE 3-WAY CONVERSATION
+    // ========================================
     private ConversationDetailResponse createThreeWayConversation(
             String tenant1Id,
             String tenant2Id,
@@ -506,7 +550,7 @@ public class TenantService {
                     .build());
         }
 
-        // Landlord - Note: You need to add a method to get landlord from AllAuthUserRepository
+        // Landlord
         allAuthUserRepository.findAccountById(landlordId).ifPresent(landlord -> participants.add(ThreeWayConversationNotification.ParticipantInfo.builder()
                 .userId(landlordId)
                 .name(landlord.getName())
@@ -534,9 +578,10 @@ public class TenantService {
                 .updatedAt(conversation.getUpdatedAt().toString())
                 .build();
     }
+
     // ========================================
-// UNBOOKMARK ROOM
-// ========================================
+    // UNBOOKMARK ROOM
+    // ========================================
     public void unbookmarkRoom(String tenantId, String roomId) {
         log.info("Unbookmarking room {} for tenant {}", roomId, tenantId);
 
@@ -559,8 +604,8 @@ public class TenantService {
     }
 
     // ========================================
-// GET ALL BOOKMARKS
-// ========================================
+    // GET ALL BOOKMARKS
+    // ========================================
     public List<BookmarkResponse> getAllBookmarks(String tenantId) {
         log.info("Getting all bookmarks for tenant: {}", tenantId);
 

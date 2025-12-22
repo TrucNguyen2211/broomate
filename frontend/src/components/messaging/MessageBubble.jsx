@@ -1,3 +1,5 @@
+// FE/src/components/messaging/MessageBubble.jsx
+
 import React, { useState } from 'react';
 import { Download, X, FileText, ExternalLink } from 'lucide-react';
 
@@ -6,15 +8,26 @@ import { Download, X, FileText, ExternalLink } from 'lucide-react';
  */
 function MessageBubble({ 
   message, 
-  isMyMessage, 
+  isMyMessage,
+  currentUserId, 
   senderName,
   senderAvatar,
-  compact = false 
+  compact = false,
+  conversation // ✅ Make sure this is passed from ChatWindow
 }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // ✅ Helper functions to detect media types
+  // ✅ Safe check for three-way conversation
+  const isThreeWay = conversation?.conversationType === 'THREE_WAY';
+  const allParticipants = conversation?.allParticipants || [];
+
+  const getSenderInfo = (senderId) => {
+    if (!isThreeWay || !allParticipants.length) return null;
+    return allParticipants.find(p => p.userId === senderId);
+  };
+
+  // Helper functions to detect media types
   const isImageUrl = (url) => {
     if (!url) return false;
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url) || 
@@ -37,32 +50,30 @@ function MessageBubble({
       const pathname = urlObj.pathname;
       const parts = pathname.split('/');
       const filename = parts[parts.length - 1];
-      // Remove query parameters and decode
       return decodeURIComponent(filename.split('?')[0]) || 'File';
     } catch {
       return 'File';
     }
   };
 
-  // ✅ Check if content itself is a media URL
+  // Check if content itself is a media URL
   const contentIsMediaUrl = message.content && (
     isImageUrl(message.content) || 
     isVideoUrl(message.content) || 
     isDocumentUrl(message.content)
   );
 
-  // ✅ Combine media URLs
+  // Combine media URLs
   const mediaUrls = message.mediaUrls || [];
   const allMediaUrls = contentIsMediaUrl 
     ? [message.content, ...mediaUrls]
     : mediaUrls;
 
-  // ✅ Filter media URLs from text content
+  // Filter media URLs from text content
   let textContent = message.content || '';
   if (contentIsMediaUrl) {
-    textContent = ''; // Don't show URL as text if it's media
+    textContent = '';
   } else if (allMediaUrls.length > 0) {
-    // Remove any media URLs from text
     allMediaUrls.forEach(url => {
       textContent = textContent.replace(url, '').trim();
     });
@@ -83,23 +94,51 @@ function MessageBubble({
       <div className={`flex gap-3 ${isMyMessage ? 'flex-row-reverse' : ''} ${compact ? 'mb-3' : 'mb-4'}`}>
         {/* Avatar */}
         <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold flex-shrink-0 ${compact ? 'text-xs' : 'text-sm'}`}>
-          {senderAvatar || (isMyMessage ? 'ME' : senderName?.charAt(0) || '?')}
+          {isMyMessage ? 'ME' : (
+            (() => {
+              if (isThreeWay) {
+                const sender = getSenderInfo(message.senderId);
+                return sender ? sender.name.charAt(0).toUpperCase() : '?';
+              }
+              return senderName?.charAt(0)?.toUpperCase() || '?';
+            })()
+          )}
         </div>
 
         {/* Message Content */}
         <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} ${compact ? 'max-w-[70%]' : 'max-w-md'}`}>
-          {/* Sender name (only for received messages) */}
-          {!isMyMessage && !compact && (
-            <p className="text-xs font-semibold text-gray-700 mb-1 px-2">{senderName}</p>
+          
+          {/* ✅ Show sender info in three-way chats */}
+          {isThreeWay && !isMyMessage && (() => {
+            const sender = getSenderInfo(message.senderId);
+            return sender ? (
+              <div className="flex items-center gap-2 mb-1 px-2">
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {sender.name}
+                </p>
+                {sender.role === 'LANDLORD' && (
+                  <span className="px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 text-xs rounded-full font-medium">
+                    Landlord
+                  </span>
+                )}
+              </div>
+            ) : null;
+          })()}
+
+          {/* ✅ Fallback sender name (for non-three-way or when sender name is provided) */}
+          {!isThreeWay && !isMyMessage && senderName && !compact && (
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 px-2">
+              {senderName}
+            </p>
           )}
 
           {/* Message bubble */}
           <div className={`px-4 py-2 rounded-2xl ${
             isMyMessage 
               ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white' 
-              : 'bg-white border border-gray-200 text-gray-900'
+              : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white'
           }`}>
-            {/* ✅ IMAGES - Render before text */}
+            {/* IMAGES - Render before text */}
             {allMediaUrls.some(url => isImageUrl(url)) && (
               <div className="mb-2 space-y-2">
                 {allMediaUrls
@@ -113,7 +152,6 @@ function MessageBubble({
                         style={{ maxHeight: '300px', width: 'auto' }}
                         onClick={() => openLightbox(imageUrl)}
                         onError={(e) => {
-                          // Fallback if image fails to load
                           e.target.style.display = 'none';
                           e.target.nextElementSibling.style.display = 'flex';
                         }}
@@ -133,7 +171,7 @@ function MessageBubble({
               </div>
             )}
 
-            {/* ✅ VIDEOS */}
+            {/* VIDEOS */}
             {allMediaUrls.some(url => isVideoUrl(url)) && (
               <div className="mb-2 space-y-2">
                 {allMediaUrls
@@ -152,7 +190,7 @@ function MessageBubble({
               </div>
             )}
 
-            {/* ✅ DOCUMENTS */}
+            {/* DOCUMENTS */}
             {allMediaUrls.some(url => isDocumentUrl(url)) && (
               <div className="mb-2 space-y-2">
                 {allMediaUrls
@@ -163,11 +201,11 @@ function MessageBubble({
                       href={docUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
                         isMyMessage
                           ? 'bg-white/20 hover:bg-white/30'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      } transition`}
+                          : 'bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
+                      }`}
                     >
                       <FileText className="w-4 h-4 flex-shrink-0" />
                       <span className="text-sm truncate flex-1">
@@ -179,7 +217,7 @@ function MessageBubble({
               </div>
             )}
 
-            {/* ✅ TEXT CONTENT - Only show if not empty */}
+            {/* TEXT CONTENT - Only show if not empty */}
             {textContent && (
               <p 
                 className={`whitespace-pre-line ${compact ? 'text-sm' : 'text-sm'}`}
@@ -190,8 +228,8 @@ function MessageBubble({
             )}
           </div>
 
-          {/* ✅ Timestamp */}
-          <p className="text-xs text-gray-500 mt-1 px-2">
+          {/* Timestamp */}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 px-2">
             {new Date(message.createdAt).toLocaleTimeString([], { 
               hour: '2-digit', 
               minute: '2-digit' 
@@ -200,7 +238,7 @@ function MessageBubble({
         </div>
       </div>
 
-      {/* ✅ LIGHTBOX for full-size images */}
+      {/* LIGHTBOX for full-size images */}
       {lightboxOpen && selectedImage && (
         <div
           className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex items-center justify-center p-4"
@@ -228,7 +266,7 @@ function MessageBubble({
             download
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute bottom-4 right-4 bg-white text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition flex items-center gap-2 shadow-lg"
+            className="absolute bottom-4 right-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center gap-2 shadow-lg border border-gray-200 dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
             <Download className="w-5 h-5" />

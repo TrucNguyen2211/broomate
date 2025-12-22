@@ -1,3 +1,5 @@
+// FE/src/pages/shared/FindRoomsPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -7,26 +9,18 @@ import {
 import roomService from '../../services/roomService';
 import tenantService from '../../services/tenantService';
 
-/**
- * FindRoomsPage - Browse and search available rooms
- * ✅ Shared between tenants and landlords
- * ✅ Uses real backend data from roomService
- */
 function FindRoomsPage() {
   const navigate = useNavigate();
   
-  // Get current user from localStorage
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isTenant = currentUser.role?.toUpperCase() === 'TENANT'; // ✅ CORRECT
+  const isTenant = currentUser.role?.toUpperCase() === 'TENANT';
 
-  // Data state
   const [rooms, setRooms] = useState([]);
   const [bookmarks, setBookmarks] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [bookmarkingIds, setBookmarkingIds] = useState(new Set());
 
-  // Filter state
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -36,10 +30,9 @@ function FindRoomsPage() {
     minBedrooms: '',
     minStay: '',
     hasWindow: 'all',
-    sortBy: 'price-asc' // price-asc, price-desc, newest, oldest
+    sortBy: 'price-asc'
   });
 
-  // Fetch data on mount
   useEffect(() => {
     fetchRooms();
     if (isTenant) {
@@ -47,7 +40,6 @@ function FindRoomsPage() {
     }
   }, [isTenant]);
 
-  // ✅ Fetch all rooms from backend
   const fetchRooms = async () => {
     setIsLoading(true);
     setError('');
@@ -56,7 +48,6 @@ function FindRoomsPage() {
         const data = await roomService.getAllRooms();
         console.log('✅ Fetched rooms:', data);
         
-        // ✅ Filter only PUBLISHED rooms (AVAILABLE doesn't exist in backend)
         const publishedRooms = data.filter(room => 
             room.status === 'PUBLISHED'
         );
@@ -80,7 +71,6 @@ function FindRoomsPage() {
     }
   };
 
-  // ✅ Fetch bookmarks (tenant only)
   const fetchBookmarks = async () => {
     try {
       const bookmarksData = await tenantService.getBookmarks();
@@ -89,15 +79,13 @@ function FindRoomsPage() {
       const bookmarkedRoomIds = new Set(
         (bookmarksData || []).map(b => b.room?.id || b.roomId).filter(Boolean)
       );
-        console.log('📌 Bookmarked room IDs:', Array.from(bookmarkedRoomIds));
+      console.log('📌 Bookmarked room IDs:', Array.from(bookmarkedRoomIds));
       setBookmarks(bookmarkedRoomIds);
     } catch (err) {
       console.error('❌ Error fetching bookmarks:', err);
-      // Don't show error - bookmarks aren't critical
     }
   };
 
-  // ✅ Toggle bookmark
   const handleToggleBookmark = async (roomId, e) => {
     e.stopPropagation();
     
@@ -118,7 +106,6 @@ function FindRoomsPage() {
           return next;
         });
         
-        // Dispatch event for dashboard
         window.dispatchEvent(new CustomEvent('dashboardActivity', {
           detail: {
             type: 'unbookmark',
@@ -132,7 +119,6 @@ function FindRoomsPage() {
         await tenantService.addBookmark(roomId);
         setBookmarks(prev => new Set(prev).add(roomId));
         
-        // Dispatch event for dashboard
         window.dispatchEvent(new CustomEvent('dashboardActivity', {
           detail: {
             type: 'bookmark',
@@ -155,7 +141,6 @@ function FindRoomsPage() {
     }
   };
 
-  // ✅ FIX: Navigation based on actual role
   const handleViewRoom = (roomId) => {
     const basePath = isTenant ? '/dashboard/tenant' : '/dashboard/landlord';
     navigate(`${basePath}/room/${roomId}`);
@@ -167,16 +152,13 @@ function FindRoomsPage() {
     return districtMatch ? districtMatch[0] : 'HCMC';
   };
 
-  // Get unique districts from rooms
   const availableDistricts = [...new Set(
     rooms
       .map(r => extractDistrict(r.address))
       .filter(d => d !== 'Unknown')
   )].sort();
 
-  // Apply filters and search
   const filteredRooms = rooms.filter(room => {
-    // Search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesTitle = room.title?.toLowerCase().includes(query);
@@ -188,7 +170,6 @@ function FindRoomsPage() {
       }
     }
 
-    // Price filters
     if (filters.minPrice && room.rentPricePerMonth < parseFloat(filters.minPrice)) {
       return false;
     }
@@ -196,7 +177,6 @@ function FindRoomsPage() {
       return false;
     }
 
-    // District filter
     if (filters.district !== 'all') {
       const roomDistrict = extractDistrict(room.address);
       if (roomDistrict !== filters.district) {
@@ -204,17 +184,14 @@ function FindRoomsPage() {
       }
     }
 
-    // Bedrooms filter
     if (filters.minBedrooms && room.numberOfBedRooms < parseInt(filters.minBedrooms)) {
       return false;
     }
 
-    // Min stay filter
     if (filters.minStay && room.minimumStayMonths > parseInt(filters.minStay)) {
       return false;
     }
 
-    // Window filter
     if (filters.hasWindow === 'yes' && !room.hasWindow) {
       return false;
     }
@@ -225,7 +202,6 @@ function FindRoomsPage() {
     return true;
   });
 
-  // Apply sorting
   const sortedRooms = [...filteredRooms].sort((a, b) => {
     switch (filters.sortBy) {
       case 'price-asc':
@@ -263,24 +239,22 @@ function FindRoomsPage() {
     filters.hasWindow !== 'all' ||
     searchQuery;
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <Loader className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading rooms...</p>
+          <Loader className="w-12 h-12 text-teal-600 dark:text-teal-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Loading rooms...</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white p-4">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           <button
             onClick={fetchRooms}
             className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
@@ -293,13 +267,13 @@ function FindRoomsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-teal-50 to-white">
+    <div className="h-full overflow-y-auto bg-gradient-to-br from-teal-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <div className="bg-white shadow-md sticky top-0 z-20">
+      <div className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-20 border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <button
             onClick={() => navigate(isTenant ? '/dashboard/tenant' : '/dashboard/landlord')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 transition"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-3 transition"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="font-medium">Back to Dashboard</span>
@@ -307,10 +281,10 @@ function FindRoomsPage() {
 
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
                 {isTenant ? 'Find Your Perfect Room' : 'Browse Available Rooms'}
               </h1>
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                 {sortedRooms.length} of {rooms.length} room{rooms.length !== 1 ? 's' : ''} available
               </p>
             </div>
@@ -331,18 +305,18 @@ function FindRoomsPage() {
 
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Search by title, address, or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -352,12 +326,12 @@ function FindRoomsPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="border-t border-gray-200 bg-gray-50">
+          <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <div className="max-w-7xl mx-auto px-4 py-4">
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {/* Price Range */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Price Range (₫)
                   </label>
                   <div className="flex gap-2">
@@ -366,27 +340,27 @@ function FindRoomsPage() {
                       placeholder="Min"
                       value={filters.minPrice}
                       onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                     <input
                       type="number"
                       placeholder="Max"
                       value={filters.maxPrice}
                       onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                 </div>
 
                 {/* District */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     District
                   </label>
                   <select
                     value={filters.district}
                     onChange={(e) => setFilters({...filters, district: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="all">All Districts</option>
                     {availableDistricts.map(district => (
@@ -397,7 +371,7 @@ function FindRoomsPage() {
 
                 {/* Bedrooms */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Min. Bedrooms
                   </label>
                   <input
@@ -406,13 +380,13 @@ function FindRoomsPage() {
                     placeholder="Any"
                     value={filters.minBedrooms}
                     onChange={(e) => setFilters({...filters, minBedrooms: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
 
                 {/* Min Stay */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Max. Min Stay (months)
                   </label>
                   <input
@@ -421,19 +395,19 @@ function FindRoomsPage() {
                     placeholder="Any"
                     value={filters.minStay}
                     onChange={(e) => setFilters({...filters, minStay: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
 
                 {/* Window */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Has Window
                   </label>
                   <select
                     value={filters.hasWindow}
                     onChange={(e) => setFilters({...filters, hasWindow: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="all">Any</option>
                     <option value="yes">Yes</option>
@@ -443,13 +417,13 @@ function FindRoomsPage() {
 
                 {/* Sort By */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Sort By
                   </label>
                   <select
                     value={filters.sortBy}
                     onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="price-asc">Price: Low to High</option>
                     <option value="price-desc">Price: High to Low</option>
@@ -463,7 +437,7 @@ function FindRoomsPage() {
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={clearFilters}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition"
                   >
                     <X className="w-4 h-4" />
                     Clear All Filters
@@ -478,13 +452,12 @@ function FindRoomsPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {sortedRooms.length === 0 ? (
-          // Empty state
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🏠</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               {hasActiveFilters ? 'No Rooms Match Your Filters' : 'No Rooms Available'}
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               {hasActiveFilters 
                 ? 'Try adjusting your filters to see more results' 
                 : 'Check back later for new listings'}
@@ -499,7 +472,6 @@ function FindRoomsPage() {
             )}
           </div>
         ) : (
-          // Rooms grid
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {sortedRooms.map((room) => {
               const isBookmarked = bookmarks.has(room.id);
@@ -508,7 +480,7 @@ function FindRoomsPage() {
               return (
                 <div
                   key={room.id}
-                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition overflow-hidden border border-gray-100 cursor-pointer"
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition overflow-hidden border border-gray-100 dark:border-gray-700 cursor-pointer"
                   onClick={() => handleViewRoom(room.id)}
                 >
                   <div className="flex flex-col sm:flex-row">
@@ -535,7 +507,7 @@ function FindRoomsPage() {
                           className={`absolute top-3 right-3 p-2 rounded-full shadow-lg transition ${
                             isBookmarked
                               ? 'bg-teal-500 text-white'
-                              : 'bg-white text-gray-600 hover:bg-teal-50'
+                              : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900'
                           } ${isBookmarking ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {isBookmarking ? (
@@ -552,13 +524,13 @@ function FindRoomsPage() {
 
                     {/* Content */}
                     <div className="flex-1 p-4 flex flex-col">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1" title={room.title}>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-1" title={room.title}>
                         {room.title || 'Untitled Room'}
                       </h3>
 
                       {/* Description */}
                       {room.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
                           {room.description}
                         </p>
                       )}
@@ -566,18 +538,18 @@ function FindRoomsPage() {
                       {/* Details */}
                       <div className="space-y-2 mb-3 flex-1">
                         {room.address && (
-                          <p className="text-sm text-gray-600 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-teal-500 flex-shrink-0" />
+                          <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-teal-500 dark:text-teal-400 flex-shrink-0" />
                             <span className="line-clamp-1" title={room.address}>
                               {room.address}
                             </span>
                           </p>
                         )}
                         
-                        <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
                           {room.minimumStayMonths && (
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4 text-teal-500" />
+                              <Calendar className="w-4 h-4 text-teal-500 dark:text-teal-400" />
                               Min. {room.minimumStayMonths} months
                             </span>
                           )}
@@ -597,27 +569,27 @@ function FindRoomsPage() {
                       {/* Amenities */}
                       <div className="flex flex-wrap gap-1 mb-3">
                         {room.hasWindow && (
-                          <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 px-2 py-1 rounded-full">
                             🪟 Window
                           </span>
                         )}
                         {room.imageUrls && room.imageUrls.length > 0 && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
                             📷 {room.imageUrls.length} photo{room.imageUrls.length !== 1 ? 's' : ''}
                           </span>
                         )}
                         {room.videoUrls && room.videoUrls.length > 0 && (
-                          <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 px-2 py-1 rounded-full">
                             🎥 Video tour
                           </span>
                         )}
                         {room.status && (
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             room.status === 'PUBLISHED' 
-                              ? 'bg-green-100 text-green-700'
+                              ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
                               : room.status === 'RENTED'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-gray-100 text-gray-700'
+                              ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                           }`}>
                             {room.status}
                           </span>
@@ -625,16 +597,16 @@ function FindRoomsPage() {
                       </div>
 
                       {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                        <div className="text-sm text-gray-600">
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
                           {room.address ? extractDistrict(room.address) : 'HCMC'}
                         </div>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-xl font-bold text-teal-600">
+                          <span className="text-xl font-bold text-teal-600 dark:text-teal-400">
                             {room.rentPricePerMonth?.toLocaleString('vi-VN')}
                           </span>
-                          <span className="text-xl font-bold text-teal-600">₫</span>
-                          <span className="text-sm text-gray-500">/mo</span>
+                          <span className="text-xl font-bold text-teal-600 dark:text-teal-400">₫</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">/mo</span>
                         </div>
                       </div>
                     </div>
